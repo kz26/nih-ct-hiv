@@ -4,6 +4,7 @@ import sqlite3
 import sys
 import xml.etree.ElementTree as ET
 
+
 if __name__ == '__main__':
 
     conn = sqlite3.connect(sys.argv[1])
