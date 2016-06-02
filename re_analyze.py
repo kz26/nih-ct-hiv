@@ -44,7 +44,7 @@ POSITIVE_SIGNATURES = (
 
 NEGATIVE_SIGNATURES = (
     r'negative [A-Z0-9 -,]*?(HIV|human immunodeficiency virus)[A-Z0-9 -,]+?antibody',
-    r'(HIV|human immunodeficiency virus).+?(HAART|retroviral)[A-Z0-9 -,]+?(in|not )eligible',
+    r'(HIV|human immunodeficiency virus).+?(HAART|retroviral)[A-Z0-9 -,]+?',
     r'HIV-( +|$)',
 )
 
@@ -65,7 +65,7 @@ def get_true_hiv_status(c, id):
 
 
 def score_text(counter, text):
-    chunks = re.split("(^inclusion|exclusion).*$", text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("^(inclusion|exclusion).*$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
     for blk in chunks:
@@ -73,27 +73,25 @@ def score_text(counter, text):
         if 'inclusion' in blk.lower():
             multiplier = 1
             print(blk)
-            continue
         elif 'exclusion' in blk.lower():
             multiplier = -1
             print(blk)
-            continue
-        for l in re.split(r'\n+', blk):
-            cs = re.split('([A-Z ]+?: +)', l, flags=re.IGNORECASE)  # split by colons
-            for l2 in cs:
+        for l in re.split(r'\n+|!\([A-Z ]+: +|[A-Z0-9]{4,}\. +', blk, flags=re.MULTILINE | re.IGNORECASE):
+            l = l.strip()
+            if l:
                 matched = False
                 for rx, v in REGEXES:
-                    if rx.search(l2):
+                    if rx.search(l):
                         matched = True
                         if v is True:
                             s = 1
                         else:
                             s = v * multiplier
                         score += s
-                        print("[%s, %s] (%s): %s" % (counter, s, rx, l2))
+                        print("[%s, %s] (%s): %s" % (counter, s, rx, l))
                         break
                 if not matched:
-                    print("[%s, UNKNOWN] %s" % (counter, l2))
+                    print("[%s, UNKNOWN] %s" % (counter, l))
     print(score, score >= 0)
     return int(score >= 0)
 
