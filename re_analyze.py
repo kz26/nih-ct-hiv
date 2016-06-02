@@ -27,7 +27,7 @@ POSITIVE_SIGNATURES = (
     r'known diagnosis of.+?HIV/AIDS',
     r'test positive for.+?(HIV|human immunodeficiency virus)',
     r'HIV \(Human Immunodeficiency Virus\) positive'
-    r'documentation of.+?(HIV|human immunodeficiency virus) infection',
+    r'(documentation|evidence) of.+?(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus).+?(HAART|retroviral).+?',
     r'(known )?human immunodeficiency virus \(HIV\) infection',
     r'(known )?infection with (HIV|human immunodeficiency virus)',
@@ -38,7 +38,9 @@ POSITIVE_SIGNATURES = (
     r'positiv.+(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
     r'risk of.+(HIV|human immunodeficiency virus)',
-    r'immunodeficiency.+(HIV|human immunodeficiency virus)',
+    r'immunodeficiency[A-Z0-9 -,]+(HIV|human immunodeficiency virus)',
+    r'patients (who have|with).+(HIV|human immunodeficiency virus)',
+    r'clinically (evident|significant).+(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
     r'HIV\+',
@@ -46,6 +48,7 @@ POSITIVE_SIGNATURES = (
 
 NEGATIVE_SIGNATURES = (
     r'HIV-( +|$)',
+    r'no reactive HIV testing',
 )
 
 ALWAYS_POSITIVE_REGEXES = [(re.compile(x, flags=re.IGNORECASE), True) for x in ALWAYS_POSITIVE_SIGNATURES]
@@ -54,8 +57,9 @@ POSITIVE_REGEXES = [(re.compile(x, flags=re.IGNORECASE), 1) for x in POSITIVE_SI
 NEGATIVE_REGEXES = [(re.compile(x, flags=re.IGNORECASE), -1) for x in NEGATIVE_SIGNATURES]
 
 POSITIVE_SUFFIX_REGEXES = [re.compile(x, flags=re.IGNORECASE) for x in (
-    r'(HIV|human immunodeficiency virus)[A-Z0-9 -,]+(may be|are|possibl(e|y)) (eligible|permitted)',
-    r'(HIV|human immunodeficiency virus)[A-Z0-9 -,]+not[A-Z0-9 -,]+excluded'
+    r'(HIV|human immunodeficiency virus)[A-Z0-9 -,\(\)]+(may be|are|possibl(e|y)) (eligible|permitted)',
+    r'(HIV|human immunodeficiency virus)[A-Z0-9 -,\(\)]+not[A-Z0-9 -,]+excluded',
+    r'(HIV|human immunodeficiency virus)[A-Z0-9 -,\(\)]+discretion'
 )]
 
 for x in POSITIVE_SIGNATURES:
@@ -73,7 +77,7 @@ def get_true_hiv_status(c, id):
 
 
 def score_text(counter, text):
-    chunks = re.split("(inclusion|exclusion).*$", text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split(".{,15}(inclusion|exclusion).{,15}$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
     for blk in chunks:
@@ -91,9 +95,10 @@ def score_text(counter, text):
                 for rx, v in REGEXES:
                     if rx.search(l):
                         matched = True
-                        s = v * multiplier
-                        if v is True:
-                            s = 1
+                        s = v * multiplier  # the default
+                        # handle special cases
+                        if v is True or (multiplier == 1 and v == 1):
+                            s = 2
                         elif v == 1:
                             for sx in POSITIVE_SUFFIX_REGEXES:
                                 if sx.search(l):
@@ -134,9 +139,10 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             mismatches.append(i + 1)
-    print("Incorrect: %s" % str(mismatches))
     print("True     : %s" % str(true_scores))
     print("Predicted: %s" % str(predicted_scores))
+    print("Incorrect: %s" % str(mismatches))
+    print("Accuracy : %f" % (100 - (100 * len(mismatches) / len(true_scores))))
     print("Precision: %s" % precision_score(true_scores, predicted_scores))
     print("Recall   : %s" % recall_score(true_scores, predicted_scores))
     print("F score  : %s" % f1_score(true_scores, predicted_scores))
