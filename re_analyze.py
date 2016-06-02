@@ -6,7 +6,7 @@ import sys
 
 from manual_annotator import annotate_interactive
 
-from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -146,3 +146,5 @@ if __name__ == '__main__':
     print("Precision: %s" % precision_score(true_scores, predicted_scores))
     print("Recall   : %s" % recall_score(true_scores, predicted_scores))
     print("F score  : %s" % f1_score(true_scores, predicted_scores))
+    print("Confusion matrix:")
+    print(confusion_matrix(true_scores, predicted_scores))
