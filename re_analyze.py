@@ -13,8 +13,8 @@ ABSOLUTE_POSITIVE_SIGNATURES = (
 )
 
 POSITIVE_ONLY_SIGNATURES = (
-    r'(positive)?[A-Z0-9 -,]*?(HIV|human immunodeficiency virus)[A-Z0-9 -,]+?antibody',
-    r'patients (with|having)[A-Z -,]+(HIV|human immunodeficiency virus)'
+    r'(positive)?.*?(HIV|human immunodeficiency virus).+?antibody',
+    r'patients (with|having).+(HIV|human immunodeficiency virus)'
 )
 POSITIVE_SIGNATURES = (
     r'seropositive for (HIV|human immunodeficiency virus)'
@@ -22,29 +22,29 @@ POSITIVE_SIGNATURES = (
     r'history of (HIV|human immunodeficiency virus)',
     r'History of primary|secondary immunodeficiency',
     r'(HIV|human immunodeficiency virus) antibody positive',
-    r'known diagnosis of[A-Z -,]+?HIV/AIDS',
-    r'test positive for[A-Z -,]+?(HIV|human immunodeficiency virus)',
+    r'known diagnosis of.+?HIV/AIDS',
+    r'test positive for.+?(HIV|human immunodeficiency virus)',
     r'HIV \(Human Immunodeficiency Virus\) positive'
-    r'documentation of[A-Z -,]+?(HIV|human immunodeficiency virus) infection',
+    r'documentation of.+?(HIV|human immunodeficiency virus) infection',
     r'(known )?human immunodeficiency virus \(HIV\) infection',
     r'(known )?infection with (HIV|human immunodeficiency virus)',
-    r'known[A-Z -,]+?(HIV|human immunodeficiency virus)',
+    r'known.+?(HIV|human immunodeficiency virus)',
     r'diagnosis of (HIV|human immunodeficiency virus) infection',
     r'(HIV|human immunodeficiency virus).+?infections?',
-    r'infect[A-Z -,]+?(HIV|human immunodeficiency virus)',
-    r'asymptomatic (for)?[A-Z -,]+(HIV|human immunodeficiency virus)',
-    r'positiv[A-Z -,]+(HIV|human immunodeficiency virus)',
+    r'infect.+?(HIV|human immunodeficiency virus)',
+    r'asymptomatic (for)?.+(HIV|human immunodeficiency virus)',
+    r'positiv.+(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
-    r'immunodeficiency[A-Z -,]+(HIV|human immunodeficiency virus)',
-    r'risk of[A-Z -,]+(HIV|human immunodeficiency virus)',
+    r'immunodeficiency.+(HIV|human immunodeficiency virus)',
+    r'risk of.+(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
     r'HIV\+',
 )
 
 NEGATIVE_SIGNATURES = (
-    r'negative [A-Z0-9 -,]*?(HIV|human immunodeficiency virus)[A-Z0-9 -,]+?antibody',
-    r'(HIV|human immunodeficiency virus).+?(HAART|retroviral)[A-Z0-9 -,]+?',
+    r'negative .*?(HIV|human immunodeficiency virus).+?antibody',
+    r'(HIV|human immunodeficiency virus).+?(HAART|retroviral).+?',
     r'HIV-( +|$)',
 )
 
@@ -76,7 +76,7 @@ def score_text(counter, text):
         elif 'exclusion' in blk.lower():
             multiplier = -1
             print(blk)
-        for l in re.split(r'\n+|!\([A-Z ]+: +|[A-Z0-9]{4,}\. +', blk, flags=re.MULTILINE | re.IGNORECASE):
+        for l in re.split(r'\n+|[A-Z ]+: +|[A-Z0-9]{4,}\. +', blk, flags=re.MULTILINE | re.IGNORECASE):
             l = l.strip()
             if l:
                 matched = False
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     true_scores = []
     predicted_scores = []
 
-    c.execute("SELECT NCTId, EligibilityCriteria FROM studies ORDER BY random() LIMIT 10")
+    #c.execute("SELECT NCTId, EligibilityCriteria FROM studies ORDER BY random() LIMIT 10")
     c.execute(
         "SELECT t1.NCTId, t1.EligibilityCriteria FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
     counter = 1
