@@ -14,6 +14,7 @@ ABSOLUTE_POSITIVE_SIGNATURES = (
 
 POSITIVE_ONLY_SIGNATURES = (
     r'(positive)?[A-Z0-9 -,]*?(HIV|human immunodeficiency virus)[A-Z0-9 -,]+?antibody',
+    r'patients (with|having)[A-Z -,]+(HIV|human immunodeficiency virus)'
 )
 POSITIVE_SIGNATURES = (
     r'seropositive for (HIV|human immunodeficiency virus)'
@@ -30,10 +31,12 @@ POSITIVE_SIGNATURES = (
     r'known[A-Z -,]+?(HIV|human immunodeficiency virus)',
     r'diagnosis of (HIV|human immunodeficiency virus) infection',
     r'(HIV|human immunodeficiency virus).+?infections?',
-    r'infections?[A-Z -,]+?(HIV|human immunodeficiency virus)',
+    r'infect[A-Z -,]+?(HIV|human immunodeficiency virus)',
     r'asymptomatic (for)?[A-Z -,]+(HIV|human immunodeficiency virus)',
-    r'positiv[A-Z -,]+(for)?[A-Z -,]+(HIV|human immunodeficiency virus)',
+    r'positiv[A-Z -,]+(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
+    r'immunodeficiency[A-Z -,]+(HIV|human immunodeficiency virus)',
+    r'risk of[A-Z -,]+(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
     r'HIV\+',
@@ -41,6 +44,7 @@ POSITIVE_SIGNATURES = (
 
 NEGATIVE_SIGNATURES = (
     r'negative [A-Z0-9 -,]*?(HIV|human immunodeficiency virus)[A-Z0-9 -,]+?antibody',
+    r'(HIV|human immunodeficiency virus).+?(HAART|retroviral)[A-Z0-9 -,]+?(in|not )eligible',
     r'HIV-( +|$)',
 )
 
@@ -103,7 +107,7 @@ if __name__ == '__main__':
     true_scores = []
     predicted_scores = []
 
-    # c.execute("SELECT NCTId, EligibilityCriteria FROM studies ORDER BY random() LIMIT 10")
+    c.execute("SELECT NCTId, EligibilityCriteria FROM studies ORDER BY random() LIMIT 10")
     c.execute(
         "SELECT t1.NCTId, t1.EligibilityCriteria FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
     counter = 1
