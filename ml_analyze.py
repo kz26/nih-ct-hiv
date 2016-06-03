@@ -9,9 +9,11 @@ from manual_annotator import annotate_interactive
 
 import numpy as np
 from scipy.sparse import coo_matrix, hstack
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import Perceptron
 
 
 # signatures for line filtering
@@ -43,7 +45,8 @@ def get_true_hiv_status(conn, id):
 
 def filter_study(study_text):
     """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
-    chunks = re.split(".{,15}(inclusion|exclusion).{,15}$", study_text, flags=re.MULTILINE | re.IGNORECASE)
+    #chunks = re.split(".{,15}(inclusion|exclusion).{,15}$", study_text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("(criteri[A-Z ]*|.{,20})(inclusion|exclusion)([A-Z ]*criteri|.{,20})$", study_text, flags=re.MULTILINE | re.IGNORECASE)
     inclusion = True
     lines = []
     for blk in chunks:
@@ -52,7 +55,7 @@ def filter_study(study_text):
             inclusion = True
         elif 'exclusion' in blk.lower():
             inclusion = False
-        for l in re.split(r'\n+|[A-Z ]+: +|[A-Z0-9]{4,}\. +', blk, flags=re.MULTILINE | re.IGNORECASE):
+        for l in re.split(r'\n+', blk, flags=re.MULTILINE | re.IGNORECASE):
             l = l.strip()
             if l and line_match(l):
                 lines.append((l, inclusion))
@@ -84,31 +87,34 @@ if __name__ == '__main__':
     y_true_text = []
     test_line_map = []   # line ranges for each study
 
-    counter = 1
+    train_count = 0
+    labels = []
     for row in c.fetchall():
+        labels.append(row[0])
         lines = filter_study(row[1])
-        if random.random() >= 0.4:
+        if random.random() >= 0.2:
             X_training.extend(lines)
             y_training.extend([row[2]] * len(lines))
+            train_count += 1
         else:
             sp = len(X_test)
             X_test.extend(lines)
             test_line_map.append((sp, len(X_test)))
             y_true.extend([row[2]] * len(lines))
             y_true_text.append(row[2])
-        counter += 1
 
-    cv = CountVectorizer(ngram_range=(1, 2), stop_words='english')
-    X_training = vectorize_all(cv, X_training, fit=True)
-    X_test = vectorize_all(cv, X_test)
+    vectorizer = CountVectorizer(ngram_range=(1, 2), stop_words='english')
+    X_training = vectorize_all(vectorizer, X_training, fit=True)
+    X_test = vectorize_all(vectorizer, X_test)
 
-    mnb = MultinomialNB()
-    mnb.fit(X_training, y_training)
+    model = MultinomialNB()
+    model.fit(X_training, y_training)
 
-    predictions = mnb.predict(X_test)
+    predictions = model.predict(X_test)
 
     for i in test_line_map:
-        y_test_text.append(int(round(np.average(predictions[i[0]:i[1]]), 0)))
+        ps = predictions[i[0]:i[1]]
+        y_test_text.append(int(round(np.average(ps), 0)))
 
     true_scores = y_true_text
     predicted_scores = y_test_text
@@ -116,13 +122,14 @@ if __name__ == '__main__':
     mismatches = []
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
-            mismatches.append(i + 1)
-    print("Count:   : %s" % len(true_scores))
-    print("Incorrect: %s" % str(mismatches))
-    print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
-    print("Precision: %s" % precision_score(true_scores, predicted_scores))
-    print("Recall   : %s" % recall_score(true_scores, predicted_scores))
-    print("F score  : %s" % f1_score(true_scores, predicted_scores))
-    print("AUC:     : %s" % roc_auc_score(true_scores, predicted_scores))
+            mismatches.append(labels[i])
+    print("Training count: %s" % train_count)
+    print("Test count: %s" % len(true_scores))
+    print("Incorrect : %s" % str(mismatches))
+    print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
+    print("Precision : %s" % precision_score(true_scores, predicted_scores))
+    print("Recall    : %s" % recall_score(true_scores, predicted_scores))
+    print("F score   : %s" % f1_score(true_scores, predicted_scores))
+    print("AUC:      : %s" % roc_auc_score(true_scores, predicted_scores))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))
