@@ -6,7 +6,7 @@ import sys
 
 from manual_annotator import annotate_interactive
 
-from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -72,8 +72,14 @@ for x in REGEXES:
     print(x)
 
 
-def get_true_hiv_status(c, id):
-    return annotate_interactive(c, id)
+def get_true_hiv_status(conn, id):
+    c = conn.cursor()
+    c.execute("SELECT hiv_eligible FROM hiv_status WHERE NCTId=?", [id])
+    result = c.fetchone()
+    if result is None:
+        return annotate_interactive(conn, id)
+    else:
+        return result[0]
 
 
 def score_text(counter, text):
@@ -139,12 +145,12 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             mismatches.append(i + 1)
-    print("True     : %s" % str(true_scores))
-    print("Predicted: %s" % str(predicted_scores))
+    print("Count:   : %s" % len(true_scores))
     print("Incorrect: %s" % str(mismatches))
-    print("Accuracy : %f" % (100 - (100 * len(mismatches) / len(true_scores))))
+    print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
     print("Precision: %s" % precision_score(true_scores, predicted_scores))
     print("Recall   : %s" % recall_score(true_scores, predicted_scores))
     print("F score  : %s" % f1_score(true_scores, predicted_scores))
+    print("AUC:     : %s" % roc_auc_score(true_scores, predicted_scores))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))

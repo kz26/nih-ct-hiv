@@ -9,21 +9,16 @@ def _save_annotation(c, id, value):
 
 def annotate_interactive(conn, id):
     c = conn.cursor()
-    c.execute("SELECT hiv_eligible FROM hiv_status WHERE NCTId=?", [id])
-    result = c.fetchone()
-    if result is None:
-        c.execute("SELECT EligibilityCriteria FROM studies WHERE NCTId=?", [id])
-        print(c.fetchone()[0])
-        v = None
-        while v is None:
-            rv = input('Enter y/n --> ').lower()
-            if rv == 'y':
-                v = True
-            elif rv == 'n':
-                v = False
-        _save_annotation(c, id, v)
-        value = v
-    else:
-        value = result[0]
+    c.execute("SELECT EligibilityCriteria FROM studies WHERE NCTId=?", [id])
+    print(c.fetchone()[0])
+    v = None
+    while v is None:
+        rv = input('Enter y/n --> ').lower()
+        if rv == 'y':
+            v = True
+        elif rv == 'n':
+            v = False
+    _save_annotation(c, id, v)
+    value = v
     conn.commit()
     return value
