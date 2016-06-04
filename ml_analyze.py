@@ -59,6 +59,7 @@ def filter_study(study_text):
             l = l.strip()
             if l and line_match(l):
                 lines.append((l, inclusion))
+                print(l)
     return lines
 
 
@@ -88,14 +89,18 @@ if __name__ == '__main__':
     test_line_map = []   # line ranges for each study
 
     train_count = 0
+    train_positive = 0
     labels = []
     for row in c.fetchall():
         labels.append(row[0])
         lines = filter_study(row[1])
         if random.random() >= 0.2:
-            X_training.extend(lines)
-            y_training.extend([row[2]] * len(lines))
-            train_count += 1
+            if row[2] or random.random() >= 0.85:
+                X_training.extend(lines)
+                y_training.extend([row[2]] * len(lines))
+                train_count += 1
+                if row[2]:
+                    train_positive += 1
         else:
             sp = len(X_test)
             X_test.extend(lines)
@@ -103,11 +108,13 @@ if __name__ == '__main__':
             y_true.extend([row[2]] * len(lines))
             y_true_text.append(row[2])
 
+    print(train_positive)
+
     vectorizer = CountVectorizer(ngram_range=(1, 2), stop_words='english')
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
-    model = MultinomialNB()
+    model = LogisticRegression()
     model.fit(X_training, y_training)
 
     predictions = model.predict(X_test)
