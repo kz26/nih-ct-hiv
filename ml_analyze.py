@@ -10,7 +10,7 @@ from manual_annotator import annotate_interactive
 import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import Perceptron
@@ -21,8 +21,11 @@ SIGNATURES = (
     r'HIV',
     r'human immunodef',
     r'immunodef',
-    r'immunocom',
-    r'immunosup'
+    r'immuno-?com',
+    r'immuno-?sup',
+    r'(N|n)o uncontrolled.+(disease|illness|condition)',
+    r'immune comp',
+    r'immune sup'
 )
 
 REGEXES = [re.compile(x) for x in SIGNATURES]
@@ -86,11 +89,12 @@ def vectorize_all(vectorizer, input_lines, fit=False):
 
 
 if __name__ == '__main__':
-    print("Line signatures: %s" % len(REGEXES))
+    for x in REGEXES:
+        print(x)
 
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
-    c.execute('SELECT t1.NCTId, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
+    c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
 
     X_training = []
     y_training = []
@@ -103,27 +107,27 @@ if __name__ == '__main__':
     train_count = 0
     train_positive = 0
     test_positive = 0
-    labels = []
+    test_labels = []
     for row in c.fetchall():
-        labels.append(row[0])
-        lines = filter_study(row[1])
+        lines = filter_study('\n'.join(row[1:4]))
         if random.random() >= 0.4:
-            if row[2] or random.random() >= 0.85:  # undersample negatives
+            if row[4] or random.random() >= 0.85:  # undersample negatives
                 X_training.extend(lines)
-                y_training.extend([row[2]] * len(lines))
+                y_training.extend([row[4]] * len(lines))
                 train_count += 1
-            if row[2]:
+            if row[4]:
                 train_positive += 1
         else:
             sp = len(X_test)
             X_test.extend(lines)
             test_line_map.append((sp, len(X_test)))
-            y_true.extend([row[2]] * len(lines))
-            y_true_text.append(row[2])
-            if row[2]:
+            y_true.extend([row[4]] * len(lines))
+            y_true_text.append(row[4])
+            if row[4]:
                 test_positive += 1
+            test_labels.append(row[0])
 
-    vectorizer = CountVectorizer(ngram_range=(2, 3))
+    vectorizer = CountVectorizer(ngram_range=(1, 2))
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
@@ -138,20 +142,24 @@ if __name__ == '__main__':
 
     true_scores = y_true_text
     predicted_scores = y_test_text
+    assert(len(true_scores) == len(predicted_scores) == len(test_labels))
 
-    mismatches = []
+    mismatches_fp = []
+    mismatches_fn = []
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
-            mismatches.append(labels[i])
+            if predicted_scores[i] == 0:
+                mismatches_fn.append(test_labels[i])
+            else:
+                mismatches_fp.append(test_labels[i])
     print("Trn count : %s" % train_count)
     print("Training +: %s" % train_positive)
     print("Test count: %s" % len(true_scores))
     print("Test +    : %s" % test_positive)
-    print("Incorrect : %s" % str(mismatches))
+    print("FP        : %s" % str(mismatches_fp))
+    print("FN        : %s" % str(mismatches_fn))
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    print("Precision : %s" % precision_score(true_scores, predicted_scores))
-    print("Recall    : %s" % recall_score(true_scores, predicted_scores))
-    print("F score   : %s" % f1_score(true_scores, predicted_scores))
+    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("AUC:      : %s" % roc_auc_score(true_scores, predicted_scores))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))

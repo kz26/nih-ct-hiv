@@ -6,7 +6,7 @@ import sys
 
 from manual_annotator import annotate_interactive
 
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -148,9 +148,7 @@ if __name__ == '__main__':
     print("Count:   : %s" % len(true_scores))
     print("Incorrect: %s" % str(mismatches))
     print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
-    print("Precision: %s" % precision_score(true_scores, predicted_scores))
-    print("Recall   : %s" % recall_score(true_scores, predicted_scores))
-    print("F score  : %s" % f1_score(true_scores, predicted_scores))
+    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("AUC:     : %s" % roc_auc_score(true_scores, predicted_scores))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))
