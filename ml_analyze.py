@@ -24,10 +24,8 @@ SIGNATURES = (
     (r'human immunodef', re.IGNORECASE),
     (r'immunodef', re.IGNORECASE),
     (r'immuno-?com', re.IGNORECASE),
-    (r'immuno-?sup', re.IGNORECASE),
     (r'uncontrolled.+(disease|illness|condition)', re.IGNORECASE),
     (r'immune comp', re.IGNORECASE),
-    (r'immune sup', re.IGNORECASE),
 )
 
 REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
@@ -132,16 +130,23 @@ if __name__ == '__main__':
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
+    #model = MultinomialNB()
     #model = LogisticRegression(class_weight='balanced')
-    model = SGDClassifier(loss='log', n_iter=100)
-    #model = RandomForestClassifier(class_weight='balanced')
+    #model = SGDClassifier(loss='log', n_iter=100)
+    #model = svm.SVC(probability=True)
+    model = RandomForestClassifier(class_weight='balanced')
     model.fit(X_training, y_training)
 
-    predictions = model.predict(X_test)
+    probabilities = model.predict_proba(X_test)
+    probabilities_text = []
 
     for i in test_line_map:
-        ps = predictions[i[0]:i[1]]
-        cps = int(round(np.average(ps), 0))
+        ps = [x[1] for x in probabilities[i[0]:i[1]]]
+        probabilities_text.append(ps)
+        if np.average(ps) >= 0.05 or max(ps) >= 0.2:
+            cps = 1
+        else:
+            cps = 0 
         y_test_text.append(cps)
 
     true_scores = y_true_text
@@ -153,9 +158,11 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             if predicted_scores[i] == 0:
-                mismatches_fn.append((test_labels[i], predictions[test_line_map[i][0]:test_line_map[i][1]]))
+                mismatches_fn.append([test_labels[i], probabilities_text[i]])
             else:
-                mismatches_fp.append(test_labels[i])
+                mismatches_fp.append([test_labels[i], probabilities_text[i]])
+        elif true_scores[i] == 1:
+            print(probabilities_text[i])
     print("Trn count : %s" % train_count)
     print("Training +: %s" % train_positive)
     print("Test count: %s" % len(true_scores))
