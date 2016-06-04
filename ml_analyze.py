@@ -19,11 +19,13 @@ from sklearn.linear_model import Perceptron
 # signatures for line filtering
 SIGNATURES = (
     r'HIV',
+    r'human immunodef',
     r'immunodef',
-    r'immunocom'
+    r'immunocom',
+    r'immunosup'
 )
 
-REGEXES = [re.compile(x, flags=re.IGNORECASE) for x in SIGNATURES]
+REGEXES = [re.compile(x) for x in SIGNATURES]
 
 
 def line_match(line):
@@ -55,11 +57,21 @@ def filter_study(study_text):
             inclusion = True
         elif 'exclusion' in blk.lower():
             inclusion = False
-        for l in re.split(r'\n+', blk, flags=re.MULTILINE | re.IGNORECASE):
-            l = l.strip()
-            if l and line_match(l):
-                lines.append((l, inclusion))
-                print(l)
+        pre = None
+        for l in re.split(r'(\n+|\. +|[A-Za-z]+ ?: +|[A-Z][a-z]+ )', blk, flags=re.MULTILINE):
+            m_pre = re.match(r'[A-Z][a-z]+ ', l)
+            if m_pre:
+                pre = l
+                continue
+            if l:
+                if pre:
+                    l = pre + l
+                    pre = None
+                l = l.strip()
+                if l:
+                    #print(l)
+                    if line_match(l):
+                        lines.append((l, inclusion))
     return lines
 
 
@@ -90,31 +102,32 @@ if __name__ == '__main__':
 
     train_count = 0
     train_positive = 0
+    test_positive = 0
     labels = []
     for row in c.fetchall():
         labels.append(row[0])
         lines = filter_study(row[1])
-        if random.random() >= 0.2:
-            if row[2] or random.random() >= 0.85:
+        if random.random() >= 0.4:
+            if row[2] or random.random() >= 0.85:  # undersample negatives
                 X_training.extend(lines)
                 y_training.extend([row[2]] * len(lines))
                 train_count += 1
-                if row[2]:
-                    train_positive += 1
+            if row[2]:
+                train_positive += 1
         else:
             sp = len(X_test)
             X_test.extend(lines)
             test_line_map.append((sp, len(X_test)))
             y_true.extend([row[2]] * len(lines))
             y_true_text.append(row[2])
+            if row[2]:
+                test_positive += 1
 
-    print(train_positive)
-
-    vectorizer = CountVectorizer(ngram_range=(1, 2), stop_words='english')
+    vectorizer = CountVectorizer(ngram_range=(2, 3))
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
-    model = LogisticRegression()
+    model = MultinomialNB()
     model.fit(X_training, y_training)
 
     predictions = model.predict(X_test)
@@ -130,8 +143,10 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             mismatches.append(labels[i])
-    print("Training count: %s" % train_count)
+    print("Trn count : %s" % train_count)
+    print("Training +: %s" % train_positive)
     print("Test count: %s" % len(true_scores))
+    print("Test +    : %s" % test_positive)
     print("Incorrect : %s" % str(mismatches))
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     print("Precision : %s" % precision_score(true_scores, predicted_scores))
