@@ -51,7 +51,7 @@ def get_true_hiv_status(conn, id):
 def filter_study(study_text):
     """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
     #chunks = re.split(".{,15}(inclusion|exclusion).{,15}$", study_text, flags=re.MULTILINE | re.IGNORECASE)
-    chunks = re.split("(criteri[A-Z ]*|.{,20})(inclusion|exclusion)([A-Z ]*criteri|.{,20})$", study_text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("(criteria[A-Z ]*|.{,20})(inclusion|exclusion)([A-Z ]*criteria|.{,20})$", study_text, flags=re.MULTILINE | re.IGNORECASE)
     inclusion = True
     lines = []
     for blk in chunks:
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     for i in test_line_map:
         ps = [x[1] for x in probabilities[i[0]:i[1]]]
         probabilities_text.append(ps)
-        if np.average(ps) >= 0.05 or max(ps) >= 0.2:
+        if np.average(ps) >= 0.05 or max(ps) >= 0.1:
             cps = 1
         else:
             cps = 0 
