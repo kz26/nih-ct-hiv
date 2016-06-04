@@ -11,24 +11,26 @@ import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import Perceptron
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 
 
 # signatures for line filtering
 SIGNATURES = (
-    r'HIV',
-    r'human immunodef',
-    r'immunodef',
-    r'immuno-?com',
-    r'immuno-?sup',
-    r'(N|n)o uncontrolled.+(disease|illness|condition)',
-    r'immune comp',
-    r'immune sup'
+    (r'HIV', 0),
+    (r'human immunodef', re.IGNORECASE),
+    (r'immunodef', re.IGNORECASE),
+    (r'immuno-?com', re.IGNORECASE),
+    (r'immuno-?sup', re.IGNORECASE),
+    (r'uncontrolled.+(disease|illness|condition)', re.IGNORECASE),
+    (r'immune comp', re.IGNORECASE),
+    (r'immune sup', re.IGNORECASE),
 )
 
-REGEXES = [re.compile(x) for x in SIGNATURES]
+REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
 
 
 def line_match(line):
@@ -111,10 +113,9 @@ if __name__ == '__main__':
     for row in c.fetchall():
         lines = filter_study('\n'.join(row[1:4]))
         if random.random() >= 0.4:
-            if row[4] or random.random() >= 0.85:  # undersample negatives
-                X_training.extend(lines)
-                y_training.extend([row[4]] * len(lines))
-                train_count += 1
+            X_training.extend(lines)
+            y_training.extend([row[4]] * len(lines))
+            train_count += 1
             if row[4]:
                 train_positive += 1
         else:
@@ -127,18 +128,21 @@ if __name__ == '__main__':
                 test_positive += 1
             test_labels.append(row[0])
 
-    vectorizer = CountVectorizer(ngram_range=(1, 2))
+    vectorizer = CountVectorizer(ngram_range=(2, 2))
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
-    model = MultinomialNB()
+    #model = LogisticRegression(class_weight='balanced')
+    model = SGDClassifier(loss='log', n_iter=100)
+    #model = RandomForestClassifier(class_weight='balanced')
     model.fit(X_training, y_training)
 
     predictions = model.predict(X_test)
 
     for i in test_line_map:
         ps = predictions[i[0]:i[1]]
-        y_test_text.append(int(round(np.average(ps), 0)))
+        cps = int(round(np.average(ps), 0))
+        y_test_text.append(cps)
 
     true_scores = y_true_text
     predicted_scores = y_test_text
@@ -149,7 +153,7 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             if predicted_scores[i] == 0:
-                mismatches_fn.append(test_labels[i])
+                mismatches_fn.append((test_labels[i], predictions[test_line_map[i][0]:test_line_map[i][1]]))
             else:
                 mismatches_fp.append(test_labels[i])
     print("Trn count : %s" % train_count)
