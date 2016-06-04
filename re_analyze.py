@@ -4,9 +4,8 @@ import re
 import sqlite3
 import sys
 
-from manual_annotator import annotate_interactive
-
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
+
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -36,6 +35,7 @@ POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus).+?infections?',
     r'infect.+?(HIV|human immunodeficiency virus)',
     r'positiv.+(HIV|human immunodeficiency virus)',
+    r'active.+(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
     r'risk of.+(HIV|human immunodeficiency virus)',
     r'immunodeficiency[A-Z0-9 -,]+(HIV|human immunodeficiency virus)',
@@ -77,7 +77,7 @@ def get_true_hiv_status(conn, id):
     c.execute("SELECT hiv_eligible FROM hiv_status WHERE NCTId=?", [id])
     result = c.fetchone()
     if result is None:
-        return annotate_interactive(conn, id)
+        raise Exception("No annotation for %s" % id)
     else:
         return result[0]
 
@@ -127,26 +127,30 @@ if __name__ == '__main__':
 
     true_scores = []
     predicted_scores = []
+    labels = []
 
-    if len(sys.argv) == 3 and sys.argv[2] == 'annotated':
-        c.execute(
-            "SELECT t1.NCTId, t1.EligibilityCriteria FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
-    else:
-        c.execute("SELECT NCTId, EligibilityCriteria FROM studies ORDER BY random() LIMIT 10")
+    c.execute(
+        "SELECT t1.NCTId, t1.EligibilityCriteria FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
 
     counter = 1
     for row in c.fetchall():
         print(row[0])
         true_scores.append(int(get_true_hiv_status(conn, row[0])))
         predicted_scores.append(score_text(counter, row[1]))
+        labels.append(row[0])
         counter += 1
 
-    mismatches = []
+    mismatches_fp = []
+    mismatches_fn = []
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
-            mismatches.append(i + 1)
+            if predicted_scores[i] == 0:
+                mismatches_fn.append(labels[i])
+            else:
+                mismatches_fp.append(labels[i])
     print("Count:   : %s" % len(true_scores))
-    print("Incorrect: %s" % str(mismatches))
+    print("FP       : %s" % str(mismatches_fp))
+    print("FN       : %s" % str(mismatches_fn))
     print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
     print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("AUC:     : %s" % roc_auc_score(true_scores, predicted_scores))

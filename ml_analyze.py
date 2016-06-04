@@ -5,8 +5,6 @@ import re
 import sqlite3
 import sys
 
-from manual_annotator import annotate_interactive
-
 import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
@@ -43,7 +41,7 @@ def get_true_hiv_status(conn, id):
     c.execute("SELECT hiv_eligible FROM hiv_status WHERE NCTId=?", [id])
     result = c.fetchone()
     if result is None:
-        return annotate_interactive(conn, id)
+        raise Exception("No annotation for %s" % id)
     else:
         return result[0]
 
