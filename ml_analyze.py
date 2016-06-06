@@ -140,7 +140,7 @@ if __name__ == '__main__':
         else:
             print("[WARNING] no lines returned from %s" % row[0])
 
-    vectorizer = CountVectorizer(ngram_range=(2, 2), binary=True)
+    vectorizer = CountVectorizer(ngram_range=(1, 2), binary=True)
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
