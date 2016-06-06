@@ -30,21 +30,21 @@ POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus).+?(HAART|retroviral).+?',
     r'(known )?human immunodeficiency virus \(HIV\) infection',
     r'(known )?infection with (HIV|human immunodeficiency virus)',
-    r'known[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'known[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'diagnosis of (HIV|human immunodeficiency virus) infection',
     r'(HIV|human immunodeficiency virus).+?infections?',
-    r'infect[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
-    r'positiv[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
-    r'active[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'infect[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'positiv[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'active[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
-    r'risk of[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
-    r'immunodeficiency[A-Z0-9 -,]+(HIV|human immunodeficiency virus)',
+    r'risk of[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'immunodeficiency[A-Z0-9 -,/]+(HIV|human immunodeficiency virus)',
     r'patients (who have|with).+(HIV|human immunodeficiency virus)',
-    r'clinically (evident|significant)[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
-    r'suffering from[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'clinically (evident|significant)[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'suffering from[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
-    r'chronic[A-Z0-9 -,]+?(?:HIV|human immunodeficiency virus)',
+    r'chronic[A-Z0-9 -,/]+?(?:HIV|human immunodeficiency virus)',
     r'HIV\+',
 )
 
@@ -86,7 +86,6 @@ def score_text(label, text):
     chunks = re.split(r"^(.*(?:criteri|characteristics).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
-    print(chunks)
     for blk in chunks:
         blk = blk.strip()
         if re.search(r'criteri|characteristics', blk, flags=re.IGNORECASE):
