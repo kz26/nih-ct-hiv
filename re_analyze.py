@@ -96,7 +96,7 @@ def score_text(label, text):
                 multiplier = 1
                 print("[INCLUSION BLOCK]")
         pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|(?:[^\(][A-Z][a-z]+ ))', blk, flags=re.MULTILINE)
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +)', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
