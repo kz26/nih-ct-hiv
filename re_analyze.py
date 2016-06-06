@@ -43,6 +43,7 @@ POSITIVE_SIGNATURES = (
     r'clinically (evident|significant)[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
+    r'chronic[A-Z0-9 -,]+?(?:HIV|human immunodeficiency virus)',
     r'HIV\+',
 )
 
