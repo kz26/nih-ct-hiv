@@ -68,8 +68,6 @@ for x in POSITIVE_SIGNATURES:
     NEGATIVE_REGEXES.append((re.compile(r'not? [A-Z0-9 -,]*?' + x, flags=re.IGNORECASE), -1))
 
 REGEXES = ALWAYS_POSITIVE_REGEXES + NEGATIVE_REGEXES + POSITIVE_ONLY_REGEXES + POSITIVE_REGEXES
-for x in REGEXES:
-    print(x)
 
 
 def get_true_hiv_status(conn, id):
@@ -82,21 +80,29 @@ def get_true_hiv_status(conn, id):
         return result[0]
 
 
-def score_text(counter, text):
-    chunks = re.split("(criteria[A-Z ]*|.{,20})(inclusion|exclusion)([A-Z ]*criteria|.{,20})$", text, flags=re.MULTILINE | re.IGNORECASE)
+def score_text(label, text):
+    chunks = re.split("^(.*(?:inclusion|include|exclusion|exclude|eligible).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
     for blk in chunks:
         blk = blk.strip()
-        if 'inclusion' in blk.lower():
-            multiplier = 1
-            print("[INCLUSION BLOCK]")
-        elif 'exclusion' in blk.lower():
+        if re.search('exclusion|exclude|not eligible|ineligible', blk.lower()):
             multiplier = -1
             print("[EXCLUSION BLOCK]")
-        for l in re.split(r'\n+|[A-Z ]+: +|[A-Z0-9]{4,}\. +', blk, flags=re.MULTILINE | re.IGNORECASE):
-            l = l.strip()
+        elif re.search('inclusion|include|eligible', blk.lower()):
+            multiplier = 1
+            print("[INCLUSION BLOCK]")
+        pre = None
+        for l in re.split(r'(\n+|\. +|[A-Za-z]+ ?: +|[A-Z][a-z]+ )', blk, flags=re.MULTILINE):
+            m_pre = re.match(r'[A-Z][a-z]+ ', l)
+            if m_pre:
+                pre = l
+                continue
             if l:
+                if pre:
+                    l = pre + l
+                    pre = None
+                l = l.strip()
                 matched = False
                 for rx, v in REGEXES:
                     if rx.search(l):
@@ -111,16 +117,17 @@ def score_text(counter, text):
                                     s = 1
                                     break
                         score += s
-                        print("[%s, %s] (%s): %s" % (counter, s, rx, l))
+                        print("[%s, %s] (%s): %s" % (label, s, rx, l))
                         break
                 if not matched:
-                    print("[%s, UNKNOWN] %s" % (counter, l))
-    print(score, score >= 0)
+                    print("[%s, UNKNOWN] %s" % (label, l))
+    print("[%s] %s %s" % (label, score, score >= 0))
     return int(score >= 0)
 
 
 if __name__ == '__main__':
-    print("Signatures: %s" % len(REGEXES))
+    for x in REGEXES:
+        print(x)
 
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
@@ -136,7 +143,7 @@ if __name__ == '__main__':
     for row in c.fetchall():
         print(row[0])
         true_scores.append(int(get_true_hiv_status(conn, row[0])))
-        predicted_scores.append(score_text(counter, row[1]))
+        predicted_scores.append(score_text(row[0], row[1]))
         labels.append(row[0])
         counter += 1
 
@@ -148,9 +155,9 @@ if __name__ == '__main__':
                 mismatches_fn.append(labels[i])
             else:
                 mismatches_fp.append(labels[i])
-    print("Count:   : %s" % len(true_scores))
     print("FP       : %s" % str(mismatches_fp))
     print("FN       : %s" % str(mismatches_fn))
+    print("Count:   : %s" % len(true_scores))
     print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
     print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("AUC:     : %s" % roc_auc_score(true_scores, predicted_scores))

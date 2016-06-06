@@ -8,12 +8,15 @@ import sys
 import numpy as np
 from scipy.sparse import coo_matrix, hstack
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
+from sklearn.preprocessing import normalize
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import Perceptron
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
+
+from re_analyze import score_text as re_score_text
 
 
 # signatures for line filtering
@@ -22,7 +25,7 @@ SIGNATURES = (
     (r'human immunodef', re.IGNORECASE),
     (r'immunodef', re.IGNORECASE),
     (r'immuno-?com', re.IGNORECASE),
-    (r'uncontrolled.+(disease|illness|condition)', re.IGNORECASE),
+    (r'(presence|uncontrolled).+(disease|illness|condition)', re.IGNORECASE),
     (r'immune comp', re.IGNORECASE),
 )
 
@@ -48,16 +51,16 @@ def get_true_hiv_status(conn, id):
 
 def filter_study(study_text):
     """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
-    #chunks = re.split(".{,15}(inclusion|exclusion).{,15}$", study_text, flags=re.MULTILINE | re.IGNORECASE)
-    chunks = re.split("(criteria[A-Z ]*|.{,20})(inclusion|exclusion)([A-Z ]*criteria|.{,20})$", study_text, flags=re.MULTILINE | re.IGNORECASE)
-    inclusion = True
+    chunks = re.split("^(.*(?:inclusion|include|exclusion|exclude).*)$", study_text, flags=re.MULTILINE | re.IGNORECASE)
     lines = []
     for blk in chunks:
         blk = blk.strip()
-        if 'inclusion' in blk.lower():
-            inclusion = True
-        elif 'exclusion' in blk.lower():
-            inclusion = False
+        if re.search('exclusion|exclude|not eligible|ineligible', blk.lower()):
+            inclusion = -1
+        elif re.search('inclusion|include|eligible', blk.lower()):
+            inclusion = 1
+        else:
+            inclusion = 0
         pre = None
         for l in re.split(r'(\n+|\. +|[A-Za-z]+ ?: +|[A-Z][a-z]+ )', blk, flags=re.MULTILINE):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
@@ -81,14 +84,18 @@ def vectorize_all(vectorizer, input_lines, fit=False):
         dtm = vectorizer.fit_transform([x[0] for x in input_lines])
     else:
         dtm = vectorizer.transform([x[0] for x in input_lines])
-    ie_status_m = coo_matrix([[int(x[1])] for x in input_lines])
-    dtm = hstack([dtm, ie_status_m])
+    ie_status_m = coo_matrix([[x[1]] for x in input_lines])
+    dtm = normalize(hstack([dtm, ie_status_m]))
     return dtm
 
 
 if __name__ == '__main__':
     for x in REGEXES:
         print(x)
+
+    COMBINE_RE = False
+    if len(sys.argv) > 2 and sys.argv[2].lower() == 'true':
+        COMBINE_RE = True
 
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
@@ -97,6 +104,7 @@ if __name__ == '__main__':
     X_training = []
     y_training = []
     X_test = []
+    X_test_raw = []
     y_true = []
     y_test_text = []
     y_true_text = []
@@ -115,6 +123,7 @@ if __name__ == '__main__':
             if row[4]:
                 train_positive += 1
         else:
+            X_test_raw.append(row[3])
             sp = len(X_test)
             X_test.extend(lines)
             test_line_map.append((sp, len(X_test)))
@@ -124,7 +133,7 @@ if __name__ == '__main__':
                 test_positive += 1
             test_labels.append(row[0])
 
-    vectorizer = CountVectorizer(ngram_range=(2, 2))
+    vectorizer = CountVectorizer(ngram_range=(2, 2), binary=True)
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
@@ -138,13 +147,17 @@ if __name__ == '__main__':
     probabilities = model.predict_proba(X_test)
     probabilities_text = []
 
-    for i in test_line_map:
-        ps = [x[1] for x in probabilities[i[0]:i[1]]]
+    for i, r in enumerate(test_line_map):
+        ps = [x[1] for x in probabilities[r[0]:r[1]]]
         probabilities_text.append(ps)
-        if np.average(ps) >= 0.05 or max(ps) >= 0.1:
+        if np.average(ps) >= 0.05 or max(ps) >= 0.1 or len(ps) > 1:
             cps = 1
         else:
-            cps = 0 
+            cps = 0
+        if cps == 1 and COMBINE_RE:
+            re_score = re_score_text(test_labels[i], X_test_raw[i])
+            if not re_score:
+                cps = re_score
         y_test_text.append(cps)
 
     true_scores = y_true_text
@@ -161,12 +174,12 @@ if __name__ == '__main__':
                 mismatches_fp.append([test_labels[i], probabilities_text[i]])
         elif true_scores[i] == 1:
             print(probabilities_text[i])
+    print("FP        : %s" % str(mismatches_fp))
+    print("FN        : %s" % str(mismatches_fn))
     print("Trn count : %s" % train_count)
     print("Training +: %s" % train_positive)
     print("Test count: %s" % len(true_scores))
     print("Test +    : %s" % test_positive)
-    print("FP        : %s" % str(mismatches_fp))
-    print("FN        : %s" % str(mismatches_fn))
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("AUC:      : %s" % roc_auc_score(true_scores, predicted_scores))
