@@ -22,7 +22,7 @@ POSITIVE_SIGNATURES = (
     r'any form of primary|secondary immunodeficiency',
     r'history of.+(HIV|human immunodeficiency virus)',
     r'History of.+(?:primary|secondary) immunodeficiency',
-    r'(HIV|human immunodeficiency virus).+antibody positive',
+    r'(HIV|human immunodeficiency virus).+antibody[A-Z ]+positive',
     r'known diagnosis of.+?HIV/AIDS',
     r'test positive for.+?(HIV|human immunodeficiency virus)',
     r'HIV \(Human Immunodeficiency Virus\) positive'
