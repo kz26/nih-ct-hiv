@@ -41,6 +41,7 @@ POSITIVE_SIGNATURES = (
     r'immunodeficiency[A-Z0-9 -,]+(HIV|human immunodeficiency virus)',
     r'patients (who have|with).+(HIV|human immunodeficiency virus)',
     r'clinically (evident|significant)[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'suffering from[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
     r'chronic[A-Z0-9 -,]+?(?:HIV|human immunodeficiency virus)',
