@@ -121,7 +121,7 @@ if __name__ == '__main__':
     for row in c.fetchall():
         lines = filter_study('\n'.join(row[1:4]))
         if lines:
-            if random.random() >= 0.4:
+            if random.random() >= 0.6:
                 X_training.extend(lines)
                 y_training.extend([row[4]] * len(lines))
                 train_count += 1
@@ -140,15 +140,15 @@ if __name__ == '__main__':
         else:
             print("[WARNING] no lines returned from %s" % row[0])
 
-    vectorizer = CountVectorizer(ngram_range=(1, 2), binary=True)
+    vectorizer = CountVectorizer(ngram_range=(1, 2))
     X_training = vectorize_all(vectorizer, X_training, fit=True)
     X_test = vectorize_all(vectorizer, X_test)
 
     #model = MultinomialNB()
-    #model = LogisticRegression(class_weight='balanced')
+    model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='log', n_iter=100)
     #model = svm.SVC(probability=True)
-    model = RandomForestClassifier(class_weight='balanced')
+    #model = RandomForestClassifier(class_weight='balanced')
     model.fit(X_training, y_training)
 
     probabilities = model.predict_proba(X_test)
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         if COMBINE_RE:
             ps.append(re_score_text(test_labels[i], X_test_raw[i]))
         probabilities_text.append(ps)
-        if np.average(ps) >= 0.05 or max(ps) >= 0.1:
+        if np.average(ps) > 0.5:
             cps = 1
         else:
             cps = 0
