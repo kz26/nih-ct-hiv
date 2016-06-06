@@ -88,7 +88,7 @@ def score_text(label, text):
     multiplier = 1
     for blk in chunks:
         blk = blk.strip()
-        if re.search('exclusion|exclude|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
+        if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
             multiplier = -1
             print("[EXCLUSION BLOCK]")
         elif re.search('inclusion|include|eligible', blk.lower()):

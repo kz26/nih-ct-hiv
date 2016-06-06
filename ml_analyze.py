@@ -57,7 +57,7 @@ def filter_study(study_text):
         blk = blk.strip()
         inclusion = 0
         if 'criteri' in blk.lower(): 
-            if re.search('exclusion|exclude|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
+            if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
                 inclusion = -1
             elif re.search('inclusion|include|eligible', blk.lower()):
                 inclusion = 1
