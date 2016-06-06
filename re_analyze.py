@@ -30,17 +30,17 @@ POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus).+?(HAART|retroviral).+?',
     r'(known )?human immunodeficiency virus \(HIV\) infection',
     r'(known )?infection with (HIV|human immunodeficiency virus)',
-    r'known.+?(HIV|human immunodeficiency virus)',
+    r'known[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'diagnosis of (HIV|human immunodeficiency virus) infection',
     r'(HIV|human immunodeficiency virus).+?infections?',
-    r'infect.+?(HIV|human immunodeficiency virus)',
-    r'positiv.+(HIV|human immunodeficiency virus)',
-    r'active.+(HIV|human immunodeficiency virus)',
+    r'infect[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'positiv[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
+    r'active[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
-    r'risk of.+(HIV|human immunodeficiency virus)',
+    r'risk of[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'immunodeficiency[A-Z0-9 -,]+(HIV|human immunodeficiency virus)',
     r'patients (who have|with).+(HIV|human immunodeficiency virus)',
-    r'clinically (evident|significant).+(HIV|human immunodeficiency virus)',
+    r'clinically (evident|significant)[A-Z0-9 -,]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
     r'HIV\+',
@@ -86,14 +86,14 @@ def score_text(label, text):
     multiplier = 1
     for blk in chunks:
         blk = blk.strip()
-        if re.search('exclusion|exclude|not eligible|ineligible', blk.lower()):
+        if re.search('exclusion|exclude|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
             multiplier = -1
             print("[EXCLUSION BLOCK]")
         elif re.search('inclusion|include|eligible', blk.lower()):
             multiplier = 1
             print("[INCLUSION BLOCK]")
         pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:

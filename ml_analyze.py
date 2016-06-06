@@ -55,14 +55,14 @@ def filter_study(study_text):
     lines = []
     for blk in chunks:
         blk = blk.strip()
-        if re.search('exclusion|exclude|not eligible|ineligible', blk.lower()):
+        if re.search('exclusion|exclude|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
             inclusion = -1
         elif re.search('inclusion|include|eligible', blk.lower()):
             inclusion = 1
         else:
             inclusion = 0
         pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
@@ -153,16 +153,13 @@ if __name__ == '__main__':
 
     for i, r in enumerate(test_line_map):
         ps = [x[1] for x in probabilities[r[0]:r[1]]]
-        #print(ps)
+        if COMBINE_RE:
+            ps.append(re_score_text(test_labels[i], X_test_raw[i]))
         probabilities_text.append(ps)
-        if np.average(ps) >= 0.05 or max(ps) >= 0.1 or len(ps) > 1:
+        if np.average(ps) >= 0.05 or max(ps) >= 0.1:
             cps = 1
         else:
             cps = 0
-        if cps == 1 and COMBINE_RE:
-            re_score = re_score_text(test_labels[i], X_test_raw[i])
-            if not re_score:
-                cps = re_score
         y_test_text.append(cps)
 
     true_scores = y_true_text
