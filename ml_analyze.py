@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import Perceptron
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 
@@ -122,14 +122,15 @@ if __name__ == '__main__':
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     X_cv = vectorize_all(vectorizer, X_cv, fit=True)
 
-    chi2_best = SelectKBest(chi2, k=1000)
+    chi2_best = SelectKBest(chi2, k=500)
     X_cv = chi2_best.fit_transform(X_cv, y_cv)
 
     #model = MultinomialNB()
     #model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-    model = svm.LinearSVC(class_weight='balanced')
+    model = svm.SVC(C=100000, gamma=0.0025)
     #model = RandomForestClassifier(class_weight='balanced')
+    #model = AdaBoostClassifier(n_estimators=100)
 
     cross_validation_count = 10
     y_predictions = cross_validation.cross_val_predict(model, X_cv, y_cv, cv=cross_validation_count, n_jobs=4)
