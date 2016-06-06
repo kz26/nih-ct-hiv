@@ -62,18 +62,19 @@ def filter_study(study_text):
         else:
             inclusion = 0
         pre = None
-        for l in re.split(r'(\n+|\. +|[A-Za-z]+ ?: +|[A-Z][a-z]+ )', blk, flags=re.MULTILINE):
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
+        for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
                 pre = l
-                continue
+                if i != len(segments) - 1:
+                    continue
             if l:
                 if pre:
                     l = pre + l
                     pre = None
                 l = l.strip()
                 if l:
-                    #print(l)
                     if line_match(l):
                         lines.append((l, inclusion))
     return lines
@@ -116,22 +117,25 @@ if __name__ == '__main__':
     test_labels = []
     for row in c.fetchall():
         lines = filter_study('\n'.join(row[1:4]))
-        if random.random() >= 0.4:
-            X_training.extend(lines)
-            y_training.extend([row[4]] * len(lines))
-            train_count += 1
-            if row[4]:
-                train_positive += 1
+        if lines:
+            if random.random() >= 0.4:
+                X_training.extend(lines)
+                y_training.extend([row[4]] * len(lines))
+                train_count += 1
+                if row[4]:
+                    train_positive += 1
+            else:
+                X_test_raw.append(row[3])
+                sp = len(X_test)
+                X_test.extend(lines)
+                test_line_map.append((sp, len(X_test)))
+                y_true.extend([row[4]] * len(lines))
+                y_true_text.append(row[4])
+                if row[4]:
+                    test_positive += 1
+                test_labels.append(row[0])
         else:
-            X_test_raw.append(row[3])
-            sp = len(X_test)
-            X_test.extend(lines)
-            test_line_map.append((sp, len(X_test)))
-            y_true.extend([row[4]] * len(lines))
-            y_true_text.append(row[4])
-            if row[4]:
-                test_positive += 1
-            test_labels.append(row[0])
+            print("[WARNING] no lines returned from %s" % row[0])
 
     vectorizer = CountVectorizer(ngram_range=(2, 2), binary=True)
     X_training = vectorize_all(vectorizer, X_training, fit=True)
@@ -149,6 +153,7 @@ if __name__ == '__main__':
 
     for i, r in enumerate(test_line_map):
         ps = [x[1] for x in probabilities[r[0]:r[1]]]
+        #print(ps)
         probabilities_text.append(ps)
         if np.average(ps) >= 0.05 or max(ps) >= 0.1 or len(ps) > 1:
             cps = 1

@@ -20,8 +20,8 @@ POSITIVE_SIGNATURES = (
     r'seropositive for (HIV|human immunodeficiency virus)',
     r'positiv.*?(HIV|human immunodeficiency virus).+?antibody',
     r'any form of primary|secondary immunodeficiency',
-    r'history of (HIV|human immunodeficiency virus)',
-    r'History of primary|secondary immunodeficiency',
+    r'history of.+(HIV|human immunodeficiency virus)',
+    r'History of.+primary|secondary immunodeficiency',
     r'(HIV|human immunodeficiency virus).+antibody positive',
     r'known diagnosis of.+?HIV/AIDS',
     r'test positive for.+?(HIV|human immunodeficiency virus)',
@@ -81,7 +81,7 @@ def get_true_hiv_status(conn, id):
 
 
 def score_text(label, text):
-    chunks = re.split("^(.*(?:inclusion|include|exclusion|exclude|eligible).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("^(.*(?:inclusion|include|exclusion|exclude|criteri).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
     for blk in chunks:
@@ -93,11 +93,13 @@ def score_text(label, text):
             multiplier = 1
             print("[INCLUSION BLOCK]")
         pre = None
-        for l in re.split(r'(\n+|\. +|[A-Za-z]+ ?: +|[A-Z][a-z]+ )', blk, flags=re.MULTILINE):
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
+        for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
                 pre = l
-                continue
+                if i != len(segments) - 1:
+                    continue
             if l:
                 if pre:
                     l = pre + l
