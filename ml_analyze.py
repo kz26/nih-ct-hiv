@@ -62,7 +62,7 @@ def filter_study(study_text):
         else:
             inclusion = 0
         pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
@@ -74,6 +74,7 @@ def filter_study(study_text):
                     l = pre + l
                     pre = None
                 l = l.strip()
+                l = l.rstrip('.;?')
                 if l:
                     if line_match(l):
                         lines.append((l, inclusion))
