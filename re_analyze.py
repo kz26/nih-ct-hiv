@@ -83,7 +83,7 @@ def get_true_hiv_status(conn, id):
 
 
 def score_text(label, text):
-    chunks = re.split("^(.*(?:criteri).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("^(.*criteri.*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
     for blk in chunks:
