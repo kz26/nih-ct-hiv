@@ -21,7 +21,7 @@ POSITIVE_SIGNATURES = (
     r'positiv.*?(HIV|human immunodeficiency virus).+?antibody',
     r'any form of primary|secondary immunodeficiency',
     r'history of.+(HIV|human immunodeficiency virus)',
-    r'History of.+primary|secondary immunodeficiency',
+    r'History of.+(?:primary|secondary) immunodeficiency',
     r'(HIV|human immunodeficiency virus).+antibody positive',
     r'known diagnosis of.+?HIV/AIDS',
     r'test positive for.+?(HIV|human immunodeficiency virus)',
@@ -97,9 +97,11 @@ def score_text(label, text):
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
-                pre = l
                 if i != len(segments) - 1:
+                    pre = l
                     continue
+                else:
+                    pre = None
             if l:
                 if pre:
                     l = pre + l

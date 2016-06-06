@@ -66,9 +66,11 @@ def filter_study(study_text):
         for i, l in enumerate(segments):
             m_pre = re.match(r'[A-Z][a-z]+ ', l)
             if m_pre:
-                pre = l
                 if i != len(segments) - 1:
+                    pre = l
                     continue
+                else:
+                    pre = None
             if l:
                 if pre:
                     l = pre + l
