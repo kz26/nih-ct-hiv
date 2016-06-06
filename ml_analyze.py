@@ -23,20 +23,20 @@ from re_analyze import score_text as re_score_text
 
 
 # signatures for line filtering
-SIGNATURES = (
-    (r'HIV', 0),
-    (r'human immunodef', re.IGNORECASE),
-    (r'immunodef', re.IGNORECASE),
-    (r'immuno-?com', re.IGNORECASE),
-    (r'(presence|uncontrolled|severe|chronic).+(disease|illness|condition)', re.IGNORECASE),
-    (r'immune comp', re.IGNORECASE),
-    (r'criteri', re.IGNORECASE),
-    (r'characteristics', re.IGNORECASE),
-    (r'inclusion|include', re.IGNORECASE),
-    (r'exclusion|exclude', re.IGNORECASE)
-)
+# SIGNATURES = (
+#     (r'HIV', 0),
+#     (r'human immunodef', re.IGNORECASE),
+#     (r'immunodef', re.IGNORECASE),
+#     (r'immuno-?com', re.IGNORECASE),
+#     (r'(presence|uncontrolled|severe|chronic).+(disease|illness|condition)', re.IGNORECASE),
+#     (r'immune comp', re.IGNORECASE),
+#     (r'criteri', re.IGNORECASE),
+#     (r'characteristics', re.IGNORECASE),
+#     (r'inclusion|include', re.IGNORECASE),
+#     (r'exclusion|exclude', re.IGNORECASE)
+# )
 
-REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
+# REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
 
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
@@ -95,8 +95,8 @@ def vectorize_all(vectorizer, input_docs, fit=False):
 
 
 if __name__ == '__main__':
-    for x in REGEXES:
-        print(x)
+    # for x in REGEXES:
+    #     print(x)
 
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
@@ -122,13 +122,15 @@ if __name__ == '__main__':
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     X_cv = vectorize_all(vectorizer, X_cv, fit=True)
 
-    chi2_best = SelectKBest(chi2, k=500)
+    chi2_best = SelectKBest(chi2, k=250)
     X_cv = chi2_best.fit_transform(X_cv, y_cv)
+    print(X_cv.shape)
 
     #model = MultinomialNB()
     #model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-    model = svm.SVC(C=100000, gamma=0.0025)
+    #model = svm.SVC(C=100000, gamma=0.0025)
+    model = svm.LinearSVC(C=15, class_weight={1: 8})
     #model = RandomForestClassifier(class_weight='balanced')
     #model = AdaBoostClassifier(n_estimators=100)
 
@@ -151,7 +153,7 @@ if __name__ == '__main__':
     print("Count     : %s" % len(true_scores))
     print("CV folds  : %s" % cross_validation_count)
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    print("AUC       : %s" % roc_auc_score(true_scores, predicted_scores))
+    print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
     print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))

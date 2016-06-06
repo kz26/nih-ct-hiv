@@ -166,7 +166,7 @@ if __name__ == '__main__':
     print("FN       : %s" % str(mismatches_fn))
     print("Count    : %s" % len(true_scores))
     print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
-    print("AUC      : %s" % roc_auc_score(true_scores, predicted_scores))
+    print("ROC-AUC  : %s" % roc_auc_score(true_scores, predicted_scores))
     print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))
