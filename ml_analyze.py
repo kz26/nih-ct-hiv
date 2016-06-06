@@ -26,10 +26,12 @@ SIGNATURES = (
     (r'human immunodef', re.IGNORECASE),
     (r'immunodef', re.IGNORECASE),
     (r'immuno-?com', re.IGNORECASE),
-    #(r'(presence|uncontrolled).+(disease|illness|condition)', re.IGNORECASE),
+    (r'(presence|uncontrolled|severe|chronic).+(disease|illness|condition)', re.IGNORECASE),
     (r'immune comp', re.IGNORECASE),
     (r'criteri', re.IGNORECASE),
     (r'characteristics', re.IGNORECASE),
+    (r'inclusion|include', re.IGNORECASE),
+    (r'exclusion|exclude', re.IGNORECASE)
 )
 
 REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
@@ -55,7 +57,7 @@ def get_true_hiv_status(conn, id):
 
 
 def filter_study(study_text):
-    """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
+    """take one study and returns a filtered version with only relevant lines included"""
     lines = []
     pre = None
     segments = re.split(
@@ -77,24 +79,20 @@ def filter_study(study_text):
             if l:
                 if line_match(l):
                     lines.append(l)
-    return lines
+    return '\n'.join(lines)
 
 
-def vectorize_all(vectorizer, input_lines, fit=False):
+def vectorize_all(vectorizer, input_docs, fit=False):
     if fit:
-        dtm = vectorizer.fit_transform(input_lines)
+        dtm = vectorizer.fit_transform(input_docs)
     else:
-        dtm = vectorizer.transform(input_lines)
+        dtm = vectorizer.transform(input_docs)
     return dtm
 
 
 if __name__ == '__main__':
     for x in REGEXES:
         print(x)
-
-    COMBINE_RE = False
-    if len(sys.argv) > 2 and sys.argv[2].lower() == 'true':
-        COMBINE_RE = True
 
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
@@ -105,8 +103,6 @@ if __name__ == '__main__':
     X_test = []
     X_test_raw = []
     y_true = []
-    y_test_text = []
-    y_true_text = []
     test_line_map = []   # line ranges for each study
 
     train_count = 0
@@ -114,26 +110,23 @@ if __name__ == '__main__':
     test_positive = 0
     test_labels = []
     for row in c.fetchall():
-        lines = filter_study('\n'.join(row[1:4]))
-        if lines:
+        text = filter_study('\n'.join(row[1:4]))
+        if text:
             if random.random() >= 0.4:
-                X_training.extend(lines)
-                y_training.extend([row[4]] * len(lines))
+                X_training.append(text)
+                y_training.append(row[4])
                 train_count += 1
                 if row[4]:
                     train_positive += 1
             else:
                 X_test_raw.append(row[3])
-                sp = len(X_test)
-                X_test.extend(lines)
-                test_line_map.append((sp, len(X_test)))
-                y_true.extend([row[4]] * len(lines))
-                y_true_text.append(row[4])
+                X_test.append(text)
+                y_true.append(row[4])
                 if row[4]:
                     test_positive += 1
                 test_labels.append(row[0])
         else:
-            print("[WARNING] no lines returned from %s" % row[0])
+            print("[WARNING] no text returned from %s after filtering" % row[0])
 
     vectorizer = CountVectorizer(ngram_range=(1, 2))
     X_training = vectorize_all(vectorizer, X_training, fit=True)
@@ -142,26 +135,14 @@ if __name__ == '__main__':
     #model = MultinomialNB()
     model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='log', n_iter=100)
-    #model = svm.SVC(probability=True)
+    #model = svm.SVC(class_weight='balanced')
     #model = RandomForestClassifier(class_weight='balanced')
     model.fit(X_training, y_training)
 
-    probabilities = model.predict_proba(X_test)
-    probabilities_text = []
+    y_test = model.predict(X_test)
 
-    for i, r in enumerate(test_line_map):
-        ps = [x[1] for x in probabilities[r[0]:r[1]]]
-        if COMBINE_RE:
-            ps.append(re_score_text(test_labels[i], X_test_raw[i]))
-        probabilities_text.append(ps)
-        if np.average(ps) > 0.5:
-            cps = 1
-        else:
-            cps = 0
-        y_test_text.append(cps)
-
-    true_scores = y_true_text
-    predicted_scores = y_test_text
+    true_scores = y_true
+    predicted_scores = y_test
     assert(len(true_scores) == len(predicted_scores) == len(test_labels))
 
     mismatches_fp = []
@@ -169,11 +150,9 @@ if __name__ == '__main__':
     for i in range(len(true_scores)):
         if true_scores[i] != predicted_scores[i]:
             if predicted_scores[i] == 0:
-                mismatches_fn.append([test_labels[i], probabilities_text[i]])
+                mismatches_fn.append(test_labels[i])
             else:
-                mismatches_fp.append([test_labels[i], probabilities_text[i]])
-        elif true_scores[i] == 1:
-            print(probabilities_text[i])
+                mismatches_fp.append(test_labels[i])
     print("FP        : %s" % str(mismatches_fp))
     print("FN        : %s" % str(mismatches_fn))
     print("Trn count : %s" % train_count)
