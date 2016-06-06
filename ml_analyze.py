@@ -121,7 +121,7 @@ if __name__ == '__main__':
     for row in c.fetchall():
         lines = filter_study('\n'.join(row[1:4]))
         if lines:
-            if random.random() >= 0.6:
+            if random.random() >= 0.4:
                 X_training.extend(lines)
                 y_training.extend([row[4]] * len(lines))
                 train_count += 1
