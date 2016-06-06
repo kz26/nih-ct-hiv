@@ -39,7 +39,7 @@ POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus)(-| )positiv',
     r'risk of[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'immunodeficiency[A-Z0-9 -,/]+(HIV|human immunodeficiency virus)',
-    r'patients (who have|with).+(HIV|human immunodeficiency virus)',
+    r'patients? (who have|with).+(HIV|human immunodeficiency virus)',
     r'clinically (evident|significant)[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'suffering from[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
@@ -92,8 +92,7 @@ def score_text(label, text):
             if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
                 multiplier = -1
                 print("[EXCLUSION BLOCK]")
-            else:
-            #elif re.search('inclusion|include|eligible', blk.lower()):
+            elif re.search('inclusion|include|eligible', blk.lower()):
                 multiplier = 1
                 print("[INCLUSION BLOCK]")
         pre = None
