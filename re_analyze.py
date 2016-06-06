@@ -83,17 +83,20 @@ def get_true_hiv_status(conn, id):
 
 
 def score_text(label, text):
-    chunks = re.split("^(.*criteri.*)$", text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split(r"^(.*(?:criteri|characteristics).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1
+    print(chunks)
     for blk in chunks:
         blk = blk.strip()
-        if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
-            multiplier = -1
-            print("[EXCLUSION BLOCK]")
-        elif re.search('inclusion|include|eligible', blk.lower()):
-            multiplier = 1
-            print("[INCLUSION BLOCK]")
+        if re.search(r'criteri|characteristics', blk, flags=re.IGNORECASE):
+            if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
+                multiplier = -1
+                print("[EXCLUSION BLOCK]")
+            else:
+            #elif re.search('inclusion|include|eligible', blk.lower()):
+                multiplier = 1
+                print("[INCLUSION BLOCK]")
         pre = None
         segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):

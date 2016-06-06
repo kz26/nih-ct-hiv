@@ -51,15 +51,16 @@ def get_true_hiv_status(conn, id):
 
 def filter_study(study_text):
     """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
-    chunks = re.split("^(.*criteri.*)$", study_text, flags=re.MULTILINE | re.IGNORECASE)
+    chunks = re.split("^(.*(?:criteri|characteristics).*)$", study_text, flags=re.MULTILINE | re.IGNORECASE)
     lines = []
     for blk in chunks:
         blk = blk.strip()
         inclusion = 0
-        if 'criteri' in blk.lower(): 
+        if re.search(r'criteri|characteristics', blk, flags=re.IGNORECASE):
             if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
                 inclusion = -1
-            elif re.search('inclusion|include|eligible|characteristics', blk.lower()):
+            else:
+            #elif re.search('inclusion|include|eligible', blk.lower()):
                 inclusion = 1
         pre = None
         segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
