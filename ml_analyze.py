@@ -3,6 +3,7 @@
 import random
 import re
 import sqlite3
+import string
 import sys
 
 import numpy as np
@@ -25,11 +26,15 @@ SIGNATURES = (
     (r'human immunodef', re.IGNORECASE),
     (r'immunodef', re.IGNORECASE),
     (r'immuno-?com', re.IGNORECASE),
-    (r'(presence|uncontrolled).+(disease|illness|condition)', re.IGNORECASE),
+    #(r'(presence|uncontrolled).+(disease|illness|condition)', re.IGNORECASE),
     (r'immune comp', re.IGNORECASE),
+    (r'criteri', re.IGNORECASE),
+    (r'characteristics', re.IGNORECASE),
 )
 
 REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
+
+REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
 
 def line_match(line):
@@ -51,45 +56,35 @@ def get_true_hiv_status(conn, id):
 
 def filter_study(study_text):
     """take one study and return one or more relevant lines along with its inclusion/exclusion context"""
-    chunks = re.split("^(.*(?:criteri|characteristics).*)$", study_text, flags=re.MULTILINE | re.IGNORECASE)
     lines = []
-    for blk in chunks:
-        blk = blk.strip()
-        inclusion = 0
-        if re.search(r'criteri|characteristics', blk, flags=re.IGNORECASE):
-            if re.search('exclusion|exclude|non.?inclusion|not [A-Z-a-z]*eligible|ineligible', blk.lower()):
-                inclusion = -1
-            elif re.search('inclusion|include|eligible', blk.lower()):
-                inclusion = 1
-        pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|!(?:[a-z]{,3} |including )[A-Z][a-z]+ )', blk, flags=re.MULTILINE)
-        for i, l in enumerate(segments):
-            m_pre = re.match(r'[A-Z][a-z]+ ', l)
-            if m_pre:
-                if i != len(segments) - 1:
-                    pre = l
-                    continue
-                else:
-                    pre = None
+    pre = None
+    segments = re.split(
+        r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|(?<!\()(?:[A-Z][a-z]+ ))',
+        study_text, flags=re.MULTILINE)
+    for i, l in enumerate(segments):
+        m_pre = re.match(r'[A-Z][a-z]+ ', l)
+        if m_pre:
+            if i != len(segments) - 1:
+                pre = l
+                continue
+            else:
+                pre = None
+        if l:
+            if pre:
+                l = pre + l
+                pre = None
+            l = l.translate(REMOVE_PUNC)
             if l:
-                if pre:
-                    l = pre + l
-                    pre = None
-                l = l.strip()
-                l = l.rstrip('.;?')
-                if l:
-                    if line_match(l):
-                        lines.append((l, inclusion))
+                if line_match(l):
+                    lines.append(l)
     return lines
 
 
 def vectorize_all(vectorizer, input_lines, fit=False):
     if fit:
-        dtm = vectorizer.fit_transform([x[0] for x in input_lines])
+        dtm = vectorizer.fit_transform(input_lines)
     else:
-        dtm = vectorizer.transform([x[0] for x in input_lines])
-    ie_status_m = coo_matrix([[x[1]] for x in input_lines])
-    dtm = normalize(hstack([dtm, ie_status_m]))
+        dtm = vectorizer.transform(input_lines)
     return dtm
 
 
