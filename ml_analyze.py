@@ -60,29 +60,29 @@ def get_true_hiv_status(conn, id):
 
 def filter_study(study_text):
     """take one study and returns a filtered version with only relevant lines included"""
-    return study_text.translate(REMOVE_PUNC)
-    # lines = []
-    # pre = None
-    # segments = re.split(
-    #     r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +|(?<!\()(?:[A-Z][a-z]+ ))',
-    #     study_text, flags=re.MULTILINE)
-    # for i, l in enumerate(segments):
-    #     m_pre = re.match(r'[A-Z][a-z]+ ', l)
-    #     if m_pre:
-    #         if i != len(segments) - 1:
-    #             pre = l
-    #             continue
-    #         else:
-    #             pre = None
-    #     if l:
-    #         if pre:
-    #             l = pre + l
-    #             pre = None
-    #         l = l.translate(REMOVE_PUNC)
-    #         if l:
-    #             if line_match(l):
-    #                 lines.append(l)
-    # return '\n'.join(lines)
+    # return study_text.translate(REMOVE_PUNC)
+    lines = []
+    pre = None
+    segments = re.split(
+        r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +|(?<!\()(?:[A-Z][a-z]+ ))',
+        study_text, flags=re.MULTILINE)
+    for i, l in enumerate(segments):
+        m_pre = re.match(r'[A-Z][a-z]+ ', l)
+        if m_pre:
+            if i != len(segments) - 1:
+                pre = l
+                continue
+            else:
+                pre = None
+        if l:
+            if pre:
+                l = pre + l
+                pre = None
+            l = l.translate(REMOVE_PUNC).strip()
+            if l:
+                lines.append(l)
+    # print('\n'.join(lines))
+    return '\n'.join(lines)
 
 
 def vectorize_all(vectorizer, input_docs, fit=False):
@@ -109,6 +109,7 @@ if __name__ == '__main__':
     count_positive = 0
     study_ids = []
     for row in c.fetchall():
+        # print(row[0])
         text = filter_study('\n'.join(row[1:4]))
         if text:
             X_cv.append(text)
@@ -121,6 +122,7 @@ if __name__ == '__main__':
 
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     X_cv = vectorize_all(vectorizer, X_cv, fit=True)
+    # print(vectorizer.get_feature_names())
 
     chi2_best = SelectKBest(chi2, k=250)
     X_cv = chi2_best.fit_transform(X_cv, y_cv)
