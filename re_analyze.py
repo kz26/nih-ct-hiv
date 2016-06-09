@@ -72,16 +72,6 @@ for x in POSITIVE_SIGNATURES:
 REGEXES = ALWAYS_POSITIVE_REGEXES + NEGATIVE_REGEXES + POSITIVE_ONLY_REGEXES + POSITIVE_REGEXES
 
 
-def get_true_hiv_status(conn, id):
-    c = conn.cursor()
-    c.execute("SELECT hiv_eligible FROM hiv_status WHERE NCTId=?", [id])
-    result = c.fetchone()
-    if result is None:
-        raise Exception("No annotation for %s" % id)
-    else:
-        return result[0]
-
-
 def score_text(label, text):
     chunks = re.split(r"^(.*(?:criteri|characteristics).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
@@ -144,13 +134,13 @@ if __name__ == '__main__':
     labels = []
 
     c.execute(
-        "SELECT t1.NCTId, t1.EligibilityCriteria FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
+        "SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
 
     counter = 1
     for row in c.fetchall():
         print(row[0])
-        true_scores.append(int(get_true_hiv_status(conn, row[0])))
-        predicted_scores.append(score_text(row[0], row[1]))
+        true_scores.append(int(row[4]))
+        predicted_scores.append(score_text(row[0], '\n'.join(row[1:4])))
         labels.append(row[0])
         counter += 1
 
