@@ -11,7 +11,6 @@ if __name__ == '__main__':
     c = conn.cursor()
 
     tree = ET.parse(sys.argv[2])
-    root = tree.getroot()
 
     first_row = tree.find('row')
     col_schema = []

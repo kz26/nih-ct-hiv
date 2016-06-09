@@ -41,7 +41,9 @@ def print_status(conn, counter):
     total = c.fetchone()[0]
     c.execute('SELECT COUNT(*) FROM hiv_status WHERE hiv_eligible=1')
     eligible = c.fetchone()[0]
-    print("Annotated %s this session, %s total, %s eligible" % (counter, total, eligible))
+    c.execute('SELECT COUNT(*) FROM hiv_status WHERE hiv_eligible=2')
+    implicit = c.fetchone()[0]
+    print("Annotated %s this session, %s total, %s eligible, %s implicit" % (counter, total, eligible, implicit))
 
 if __name__ == '__main__':
     conn = sqlite3.connect(sys.argv[1])
