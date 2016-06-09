@@ -16,15 +16,17 @@ def annotate_interactive(conn, id, allow_skip=False):
     print(c.fetchone()[0])
     v = None
     if allow_skip:
-        prompt = 'Enter y/n/s --> '
+        prompt = 'Enter y/n/i/s --> '
     else:
-        prompt = 'Enter y/n --> '
+        prompt = 'Enter y/n/i/s --> '
     while v is None:
         rv = input(prompt).lower()
         if rv == 'y':
-            v = True
+            v = 1
         elif rv == 'n':
-            v = False
+            v = 0
+        elif rv == 'i':
+            v = 2
         elif allow_skip and rv == 's':
             return None
     _save_annotation(c, id, v)
