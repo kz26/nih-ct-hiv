@@ -2,6 +2,7 @@
 
 import sqlite3
 import sys
+import webbrowser
 from time import sleep
 
 
@@ -11,14 +12,15 @@ def _save_annotation(c, id, value):
 
 def annotate_interactive(conn, id, allow_skip=False):
     c = conn.cursor()
-    c.execute("SELECT EligibilityCriteria FROM studies WHERE NCTId=?", [id])
+    c.execute("SELECT BriefTitle, StudyType, EligibilityCriteria FROM studies WHERE NCTId=?", [id])
+    row = c.fetchone()
     print(id)
-    print(c.fetchone()[0])
+    print('\n'.join(row))
     v = None
     if allow_skip:
-        prompt = 'Enter y/n/i/s --> '
+        prompt = 'Enter y/n/i/b/s --> '
     else:
-        prompt = 'Enter y/n/i/s --> '
+        prompt = 'Enter y/n/i/b/s --> '
     while v is None:
         rv = input(prompt).lower()
         if rv == 'y':
@@ -27,6 +29,9 @@ def annotate_interactive(conn, id, allow_skip=False):
             v = 0
         elif rv == 'i':
             v = 2
+        elif rv == 'b':
+            v = None
+            webbrowser.open("https://clinicaltrials.gov/ct2/show/%s" % id)
         elif allow_skip and rv == 's':
             return None
     _save_annotation(c, id, v)
