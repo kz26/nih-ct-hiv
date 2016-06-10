@@ -120,11 +120,11 @@ def score_text(label, text):
                     print("[%s, UNKNOWN] %s" % (label, l))
     print("[%s] Score: %s" % (label, score))
     if score > 0:
-        return 1
+        return 2
     elif score < 0:
-        return -1
-    else:
         return 0
+    else:
+        return 1
 
 
 
