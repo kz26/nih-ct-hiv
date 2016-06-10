@@ -156,7 +156,7 @@ if __name__ == '__main__':
     print("CV folds  : %s" % cross_validation_count)
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
-    target_names = ['HIV-ineligible', 'HIV-eligible', 'indeterminate']
+    target_names = ['HIV-ineligible', 'indeterminate', 'HIV-eligible']
     print(len(target_names))
     print(classification_report(true_scores, predicted_scores, target_names=target_names))
     print("Confusion matrix:")
