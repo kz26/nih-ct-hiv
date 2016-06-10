@@ -132,7 +132,7 @@ if __name__ == '__main__':
     #model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
     #model = svm.SVC(C=1000000, kernel='linear', class_weight={1: 10, 2: 10})
-    model = svm.LinearSVC(C=15, class_weight={1: 5, 2: 10})
+    model = svm.LinearSVC(C=20, class_weight={1: 5, 2: 20})
     #model = RandomForestClassifier(class_weight='balanced')
     #model = AdaBoostClassifier(n_estimators=100)
 
