@@ -131,8 +131,8 @@ if __name__ == '__main__':
     #model = MultinomialNB()
     #model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-    #model = svm.SVC(C=100000, gamma=0.0025)
-    model = svm.LinearSVC(C=15, class_weight={1: 8})
+    #model = svm.SVC(C=1000000, kernel='linear', class_weight={1: 10, 2: 10})
+    model = svm.LinearSVC(C=15, class_weight={1: 10, 2: 10})
     #model = RandomForestClassifier(class_weight='balanced')
     #model = AdaBoostClassifier(n_estimators=100)
 
@@ -142,20 +142,22 @@ if __name__ == '__main__':
     true_scores = y_cv
     predicted_scores = y_predictions
 
-    mismatches_fp = []
-    mismatches_fn = []
-    for i in range(len(true_scores)):
-        if true_scores[i] != predicted_scores[i]:
-            if predicted_scores[i] == 0:
-                mismatches_fn.append(study_ids[i])
-            else:
-                mismatches_fp.append(study_ids[i])
-    print("FP        : %s" % str(mismatches_fp))
-    print("FN        : %s" % str(mismatches_fn))
+    # mismatches_fp = []
+    # mismatches_fn = []
+    # for i in range(len(true_scores)):
+    #     if true_scores[i] != predicted_scores[i]:
+    #         if predicted_scores[i] == 0:
+    #             mismatches_fn.append(study_ids[i])
+    #         else:
+    #             mismatches_fp.append(study_ids[i])
+    # print("FP        : %s" % str(mismatches_fp))
+    # print("FN        : %s" % str(mismatches_fn))
     print("Count     : %s" % len(true_scores))
     print("CV folds  : %s" % cross_validation_count)
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
-    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
+    # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
+    target_names = ['HIV-ineligible', 'HIV-eligible', 'indeterminate']
+    print(len(target_names))
+    print(classification_report(true_scores, predicted_scores, target_names=target_names))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))

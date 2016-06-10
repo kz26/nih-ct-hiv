@@ -35,7 +35,8 @@ POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus).+?infections?',
     r'infect[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'positiv[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
-    r'active[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'(?:active|chronic)[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
+    r'(?:active|chronic)[A-Z0-9 -,/]+?(infection)',
     r'(HIV|human immunodeficiency virus)(-| )positiv',
     r'risk of[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'immunodeficiency[A-Z0-9 -,/]+(HIV|human immunodeficiency virus)',
@@ -44,7 +45,6 @@ POSITIVE_SIGNATURES = (
     r'suffering from[A-Z0-9 -,/]+?(HIV|human immunodeficiency virus)',
     r'HIV-seropositive',
     r'HIV infection',
-    r'chronic[A-Z0-9 -,/]+?(?:HIV|human immunodeficiency virus)',
     r'HIV\+',
 )
 
@@ -118,8 +118,14 @@ def score_text(label, text):
                         break
                 if not matched:
                     print("[%s, UNKNOWN] %s" % (label, l))
-    print("[%s] %s %s" % (label, score, score >= 0))
-    return int(score >= 0)
+    print("[%s] Score: %s" % (label, score))
+    if score > 0:
+        return 1
+    elif score < 0:
+        return -1
+    else:
+        return 0
+
 
 
 if __name__ == '__main__':
@@ -144,19 +150,19 @@ if __name__ == '__main__':
         labels.append(row[0])
         counter += 1
 
-    mismatches_fp = []
-    mismatches_fn = []
-    for i in range(len(true_scores)):
-        if true_scores[i] != predicted_scores[i]:
-            if predicted_scores[i] == 0:
-                mismatches_fn.append(labels[i])
-            else:
-                mismatches_fp.append(labels[i])
-    print("FP       : %s" % str(mismatches_fp))
-    print("FN       : %s" % str(mismatches_fn))
+    # mismatches_fp = []
+    # mismatches_fn = []
+    # for i in range(len(true_scores)):
+    #     if true_scores[i] != predicted_scores[i]:
+    #         if predicted_scores[i] == 0:
+    #             mismatches_fn.append(labels[i])
+    #         else:
+    #             mismatches_fp.append(labels[i])
+    # print("FP       : %s" % str(mismatches_fp))
+    # print("FN       : %s" % str(mismatches_fn))
     print("Count    : %s" % len(true_scores))
     print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
-    print("ROC-AUC  : %s" % roc_auc_score(true_scores, predicted_scores))
-    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'HIV-eligible']))
+    # print("ROC-AUC  : %s" % roc_auc_score(true_scores, predicted_scores))
+    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'indeterminate', 'HIV-eligible']))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))
