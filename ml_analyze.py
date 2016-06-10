@@ -132,7 +132,7 @@ if __name__ == '__main__':
     #model = LogisticRegression(class_weight='balanced')
     #model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
     #model = svm.SVC(C=1000000, kernel='linear', class_weight={1: 10, 2: 10})
-    model = svm.LinearSVC(C=15, class_weight={1: 10, 2: 20})
+    model = svm.LinearSVC(C=15, class_weight={1: 5, 2: 10})
     #model = RandomForestClassifier(class_weight='balanced')
     #model = AdaBoostClassifier(n_estimators=100)
 
@@ -157,7 +157,6 @@ if __name__ == '__main__':
     print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
     target_names = ['HIV-ineligible', 'indeterminate', 'HIV-eligible']
-    print(len(target_names))
     print(classification_report(true_scores, predicted_scores, target_names=target_names))
     print("Confusion matrix:")
     print(confusion_matrix(true_scores, predicted_scores))
