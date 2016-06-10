@@ -28,11 +28,11 @@ def annotate_interactive(conn, id, counter, allow_skip=False):
     while v is None:
         rv = input(prompt).lower()
         if rv == 'y':
-            v = 1
+            v = 2
         elif rv == 'n':
             v = 0
         elif rv == 'i':
-            v = 2
+            v = 1
         elif rv == 'b':
             v = None
             webbrowser.open("https://clinicaltrials.gov/ct2/show/%s" % id)
