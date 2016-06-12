@@ -19,22 +19,6 @@ from sklearn import cross_validation
 from scipy import stats as ST
 
 
-# signatures for line filtering
-# SIGNATURES = (
-#     (r'HIV', 0),
-#     (r'human immunodef', re.IGNORECASE),
-#     (r'immunodef', re.IGNORECASE),
-#     (r'immuno-?com', re.IGNORECASE),
-#     (r'(presence|uncontrolled|severe|chronic).+(disease|illness|condition)', re.IGNORECASE),
-#     (r'immune comp', re.IGNORECASE),
-#     (r'criteri', re.IGNORECASE),
-#     (r'characteristics', re.IGNORECASE),
-#     (r'inclusion|include', re.IGNORECASE),
-#     (r'exclusion|exclude', re.IGNORECASE)
-# )
-
-# REGEXES = [re.compile(x[0], flags=x[1]) for x in SIGNATURES]
-
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
 
@@ -55,30 +39,18 @@ def get_true_hiv_status(conn, id):
         return result[0]
 
 
-def filter_study(study_text):
+def filter_study(title, condition, ec):
     """take one study and returns a filtered version with only relevant lines included"""
-    # return study_text.translate(REMOVE_PUNC)
-    lines = []
-    pre = None
+    lines = [title, condition]
     segments = re.split(
-        r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +|(?<!\()(?:[A-Z][a-z]+ ))',
-        study_text, flags=re.MULTILINE)
+        r'\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +| (?=[A-Z][a-z])',
+        ec, flags=re.MULTILINE)
     for i, l in enumerate(segments):
-        m_pre = re.match(r'[A-Z][a-z]+ ', l)
-        if m_pre:
-            if i != len(segments) - 1:
-                pre = l
-                continue
-            else:
-                pre = None
+        l = l.strip()
         if l:
-            if pre:
-                l = pre + l
-                pre = None
             l = l.translate(REMOVE_PUNC).strip()
             if l:
                 lines.append(l)
-    # print('\n'.join(lines))
     return '\n'.join(lines)
 
 
@@ -87,14 +59,10 @@ def vectorize_all(vectorizer, input_docs, fit=False):
         dtm = vectorizer.fit_transform(input_docs)
     else:
         dtm = vectorizer.transform(input_docs)
-    print(dtm.shape)
     return dtm
 
 
 if __name__ == '__main__':
-    # for x in REGEXES:
-    #     print(x)
-
     conn = sqlite3.connect(sys.argv[1])
     c = conn.cursor()
     c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
@@ -106,8 +74,7 @@ if __name__ == '__main__':
     count = 0
     count_positive = 0
     for row in c.fetchall():
-        # print(row[0])
-        text = filter_study('\n'.join(row[1:4]))
+        text = filter_study(row[1], row[2], row[3])
         if text:
             X.append(text)
             y.append(row[4])
@@ -120,14 +87,16 @@ if __name__ == '__main__':
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     X = vectorize_all(vectorizer, X, fit=True)
     y = np.array(y)
-
-    chi2_best = SelectKBest(chi2, k=250)
-    X = chi2_best.fit_transform(X, y)
     print(X.shape)
+
+    chi2_best = SelectKBest(chi2, k=100)
+    X = chi2_best.fit_transform(X, y)
 
     stats = []
     seed = 0
-    skf = cross_validation.StratifiedKFold(y, n_folds=10, shuffle=True, random_state=seed)
+    folds = 10
+    print("CV folds: %s" % folds)
+    skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
 

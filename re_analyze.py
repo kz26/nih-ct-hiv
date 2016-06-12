@@ -88,17 +88,7 @@ def score_text(label, text):
         pre = None
         segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +)', blk, flags=re.MULTILINE)
         for i, l in enumerate(segments):
-            m_pre = re.match(r'[A-Z][a-z]+ ', l)
-            if m_pre:
-                if i != len(segments) - 1:
-                    pre = l
-                    continue
-                else:
-                    pre = None
             if l:
-                if pre:
-                    l = pre + l
-                    pre = None
                 l = l.strip()
                 matched = False
                 for rx, v in REGEXES:
