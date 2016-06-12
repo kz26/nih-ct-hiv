@@ -91,6 +91,7 @@ if __name__ == '__main__':
 
     chi2_best = SelectKBest(chi2, k=100)
     X = chi2_best.fit_transform(X, y)
+    print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
 
     stats = []
     seed = 0
