@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
-        sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, average=None))[:3]
+        sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
         for i in range(3):
             bt = (y_test == i)
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         # print(classification_report(y_test, y_predicted, target_names=target_names))
 
     for i, label in enumerate(('HIV-ineligible', 'indeterminate', 'HIV-eligible')):
-        for j, metric in enumerate(('precision', 'recall', 'F1 score', 'ROC-AUC score')):
+        for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score')):
             sd = [x[j][i] for x in stats]
             sd_mean = np.mean(sd)
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
