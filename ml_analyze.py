@@ -18,15 +18,7 @@ from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 from scipy import stats as ST
 
-
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
-
-
-def line_match(line):
-    for rx in REGEXES:
-        if rx.search(line):
-            return True
-    return False
 
 
 def get_true_hiv_status(conn, id):
