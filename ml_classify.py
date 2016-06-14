@@ -17,6 +17,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 from scipy import stats as ST
+import matplotlib.pyplot as plt
 
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
@@ -89,6 +90,14 @@ if __name__ == '__main__':
     seed = 0
     folds = 10
     print("CV folds: %s" % folds)
+
+    label_map = ('HIV-ineligible', 'indeterminate', 'HIV-eligible')
+    mean_fpr = {}
+    mean_tpr = {}
+    for x in label_map:
+        mean_fpr[x] = np.linspace(0, 1, 100)
+        mean_tpr[x] = 0.0
+
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
@@ -105,25 +114,46 @@ if __name__ == '__main__':
         y_predicted = model.predict(X_test)
         sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
-        for i in range(3):
+        for i, label in enumerate(label_map):
             bt = (y_test == i)
             bp = (y_predicted == i)
             aucs.append(metrics.roc_auc_score(bt, bp))
-            # fpr, tpr, thresholds = metrics.roc_curve(bt, bp)
-            # aucs.append(metrics.auc(fpr, tpr))
+            fpr, tpr, thresholds = metrics.roc_curve(bt, bp)
+            mean_tpr[label] = np.interp(mean_fpr[label], fpr, tpr)
+            mean_tpr[label][0] = 0.0
         sd.append(tuple(aucs))
         stats.append(sd)
         # target_names = ['HIV-ineligible', 'indeterminate', 'HIV-eligible']
         # print(classification_report(y_test, y_predicted, target_names=target_names))
 
-    for i, label in enumerate(('HIV-ineligible', 'indeterminate', 'HIV-eligible')):
+    for i, label in enumerate(label_map):
+        stat_mean = {}
         for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score')):
             sd = [x[j][i] for x in stats]
             sd_mean = np.mean(sd)
+            stat_mean[metric] = sd_mean
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
             print("%s %s: %s %s" % (label, metric, sd_mean, sd_ci))
 
-    # print("Count     : %s" % len(true_scores))
+        plt.plot(mean_fpr[label], mean_tpr[label],
+                 label="%s (mean AUC = %0.2f)" % (label, stat_mean['ROC-AUC score']), lw=2)
+
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([-0.05, 1.05])
+    ax = plt.gca()
+    limits = [
+        np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+        np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+    ]
+    plt.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Mean ROC')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+        # print("Count     : %s" % len(true_scores))
     # print("CV folds  : %s" % cross_validation_count)
     # print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     # # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))

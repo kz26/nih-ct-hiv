@@ -5,7 +5,7 @@ import sqlite3
 import sys
 from time import sleep
 
-from re_analyze import score_text as re_score_text
+from re_classify import score_text as re_score_text
 
 
 def _save_annotation(c, id, value):
