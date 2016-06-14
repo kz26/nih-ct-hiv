@@ -1,80 +1,46 @@
 #!/usr/bin/env python3
 
-import random
+import pickle
 import re
 import sqlite3
-import string
 import sys
 
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn import metrics
-from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import Perceptron
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 from scipy import stats as ST
 import matplotlib.pyplot as plt
 
-REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
+DATABASE = 'studies.sqlite'
 
-
-def filter_study(title, condition, ec):
-    """take one study and returns a filtered version with only relevant lines included"""
-    lines = [title, condition]
-    segments = re.split(
-        r'\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +| (?=[A-Z][a-z])',
-        ec, flags=re.MULTILINE)
-    for i, l in enumerate(segments):
-        l = l.strip()
-        if l:
-            l = l.translate(REMOVE_PUNC).strip()
-            if l:
-                lines.append(l)
-    return '\n'.join(lines)
-
-
-def vectorize_all(vectorizer, input_docs, fit=False):
-    if fit:
-        dtm = vectorizer.fit_transform(input_docs)
-    else:
-        dtm = vectorizer.transform(input_docs)
-    return dtm
 
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(sys.argv[1])
+    conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
 
-    X = []
+
+    data = pickle.load(open(sys.argv[1], 'rb'))
+    vectorizer = data['vectorizer']
+    cui_names = data['cui_names']
+    X = data['X']
     y = []
-    study_ids = []
-
-    count = 0
-    count_positive = 0
-    for row in c.fetchall():
-        text = filter_study(row[1], row[2], row[3])
-        if text:
-            X.append(text)
-            y.append(row[4])
-            study_ids.append(row[0])
-            if row[4]:
-                count_positive += 1
-        else:
-            print("[WARNING] no text returned from %s after filtering" % row[0])
-
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))
-    X = vectorize_all(vectorizer, X, fit=True)
+    study_ids = data['study_ids']
+    for s in study_ids:
+        c.execute('SELECT hiv_eligible FROM hiv_status WHERE NCTId=?', [s])
+        y.append(c.fetchone()[0])
     y = np.array(y)
+
+    X = TfidfTransformer().fit_transform(X, y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=100)
+    chi2_best = SelectKBest(chi2, k=250)
     X = chi2_best.fit_transform(X, y)
-    print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
+    print([cui_names[x] for x in np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()]])
 
     stats = []
     seed = 0
@@ -101,9 +67,9 @@ if __name__ == '__main__':
         # model = MultinomialNB()
         # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
         # model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-        # model = svm.SVC(C=150, decision_function_shape='ovr',
-        #                class_weight={1: 5, 2: 12}, random_state=seed)
-        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 12}, random_state=seed)
+        #model = svm.SVC(C=10000, decision_function_shape='ovo',
+        #            class_weight={1: 5, 2: 12}, random_state=seed)
+        model = svm.LinearSVC(C=1.5, class_weight={1: 5, 2: 12}, random_state=seed)
         # model = RandomForestClassifier(class_weight='balanced')
         # model = AdaBoostClassifier(n_estimators=100)
 
