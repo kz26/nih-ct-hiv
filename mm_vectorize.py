@@ -37,11 +37,11 @@ def get_features(study_id):
             ncui = 'N' + x.find('.//NegConcCUI').text
             names[ncui] = '[N] ' + x.find('.//NegConcMatched').text
 
-            neg_pi = x.find('.//NegConcPI')
-            ncui_pos = int(neg_pi.find('StartPos').text)
-            ncui_length = int(neg_pi.find('Length').text)
-            if ncui_pos not in features or features[ncui_pos][1] < ncui_length:
-                features[ncui_pos] = (ncui, ncui_length)
+            for neg_pi in x.findall('.//NegConcPI'):
+                ncui_pos = int(neg_pi.find('StartPos').text)
+                ncui_length = int(neg_pi.find('Length').text)
+                if ncui_pos not in features or features[ncui_pos][1] < ncui_length:
+                    features[ncui_pos] = (ncui, ncui_length)
 
         for mapping in root.findall('.//Mapping[1]'):
             for candidate in mapping.findall('.//Candidate'):
@@ -49,11 +49,15 @@ def get_features(study_id):
                 names[cui] = candidate.find('CandidatePreferred').text
                 names['N' + cui] = '[N] ' + candidate.find('CandidatePreferred').text
 
-                pi = candidate.find('.//ConceptPI')
-                pos = int(pi.find('StartPos').text)
-                length = int(pi.find('Length').text)
-                if pos not in features or features[pos][1] < length:
-                    features[pos] = (cui, length)
+                start_pos = float('inf')
+                length = 0
+                for pi in candidate.findall('.//ConceptPI'):
+                    pos = int(pi.find('StartPos').text)
+                    l = int(pi.find('Length').text)
+                    start_pos = min(start_pos, pos)
+                    length += l + pos - start_pos
+                if start_pos not in features or features[start_pos][1] < length:
+                    features[start_pos] = (cui, length)
 
         features_list = []
         for k, v in features.items():
@@ -106,10 +110,11 @@ if __name__ == '__main__':
             features, names = get_features(study_id)
             text = filter_study(*row[1:])
             text = features_to_text(features, text)
-            # text = text.translate(REMOVE_PUNC)
+            text = text.translate(REMOVE_PUNC)
             cn.update(names)
             counter += 1
-            # sys.stderr.write(text)
+            # sys.stderr.write(study_id + '\n')
+            # sys.stderr.write(text + '\n')
             sys.stderr.write(str(counter) + '\n')
             yield text
 
