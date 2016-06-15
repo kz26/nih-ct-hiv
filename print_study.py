@@ -24,8 +24,9 @@ def filter_study(title, condition, ec):
                 if ' ' in l and l[-1] not in string.punctuation:
                     l += '.'
                 lines.append(l)
-    return '\n'.join(lines)
-
+    text = '\n'.join(lines)
+    cp = subprocess.run(['iconv', '-t', 'ascii//TRANSLIT'], input=text, stdout=subprocess.PIPE, universal_newlines=True)
+    return cp.stdout
 
 if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
@@ -34,6 +35,4 @@ if __name__ == '__main__':
         'SELECT t1.BriefTitle, t1.Condition, t1.EligibilityCriteria \
          FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=? AND t1.NCTId=t2.NCTId ORDER BY t1.NCTId', [sys.argv[1]])
     row = c.fetchone()
-    out = filter_study(*row)
-    subprocess.run(['iconv', '-t', 'ascii//TRANSLIT'], input=out, universal_newlines=True)
-    print()
+    print(filter_study(*row))
