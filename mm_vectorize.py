@@ -32,7 +32,7 @@ def get_features(study_id):
             neg_trigger = x.find('.//NegTriggerPI')
             neg_pos = int(neg_trigger.find('StartPos').text)
             neg_length = int(neg_trigger.find('Length').text)
-            features[neg_pos] = (neg_type, neg_length)
+            # features[neg_pos] = (neg_type, neg_length)
 
             ncui = 'N' + x.find('.//NegConcCUI').text
             names[ncui] = '[N] ' + x.find('.//NegConcMatched').text
@@ -106,13 +106,14 @@ if __name__ == '__main__':
             features, names = get_features(study_id)
             text = filter_study(*row[1:])
             text = features_to_text(features, text)
-            text = text.translate(REMOVE_PUNC)
+            # text = text.translate(REMOVE_PUNC)
             cn.update(names)
             counter += 1
+            # sys.stderr.write(text)
             sys.stderr.write(str(counter) + '\n')
             yield text
 
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(ngram_range=(1, 1))
     X = vectorizer.fit_transform(gen_documents(study_ids, cui_names))
     data = {
         'vectorizer': vectorizer,

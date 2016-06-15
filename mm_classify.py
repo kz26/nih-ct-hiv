@@ -6,10 +6,8 @@ import sqlite3
 import sys
 
 import numpy as np
-from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn import metrics
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 from scipy import stats as ST
@@ -35,12 +33,9 @@ if __name__ == '__main__':
         y.append(c.fetchone()[0])
     y = np.array(y)
 
-    X = TfidfTransformer().fit_transform(X, y)
-    print(X.shape)
-
-    chi2_best = SelectKBest(chi2, k=250)
+    chi2_best = SelectKBest(chi2, k=100)
     X = chi2_best.fit_transform(X, y)
-    print([cui_names[x] for x in np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()]])
+    print([cui_names.get(x.upper(), x) for x in np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()]])
 
     stats = []
     seed = 0
@@ -64,14 +59,9 @@ if __name__ == '__main__':
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
 
-        # model = MultinomialNB()
-        # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
         #model = svm.SVC(C=10000, decision_function_shape='ovo',
         #            class_weight={1: 5, 2: 12}, random_state=seed)
-        model = svm.LinearSVC(C=1.5, class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = RandomForestClassifier(class_weight='balanced')
-        # model = AdaBoostClassifier(n_estimators=100)
+        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 12}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
