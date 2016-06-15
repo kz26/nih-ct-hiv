@@ -33,8 +33,11 @@ if __name__ == '__main__':
         y.append(c.fetchone()[0])
     y = np.array(y)
 
-    chi2_best = SelectKBest(chi2, k=100)
+    print(X.shape)
+
+    chi2_best = SelectKBest(chi2, k=200)
     X = chi2_best.fit_transform(X, y)
+    print(X.shape)
     print([cui_names.get(x.upper(), x) for x in np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()]])
 
     stats = []
@@ -61,7 +64,7 @@ if __name__ == '__main__':
 
         #model = svm.SVC(C=10000, decision_function_shape='ovo',
         #            class_weight={1: 5, 2: 12}, random_state=seed)
-        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 12}, random_state=seed)
+        model = svm.LinearSVC(C=10, class_weight={1: 5, 2: 12}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)

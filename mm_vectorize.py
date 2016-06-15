@@ -110,7 +110,7 @@ if __name__ == '__main__':
             features, names = get_features(study_id)
             text = filter_study(*row[1:])
             text = features_to_text(features, text)
-            text = text.translate(REMOVE_PUNC)
+            # text = text.translate(REMOVE_PUNC)
             cn.update(names)
             counter += 1
             # sys.stderr.write(study_id + '\n')
