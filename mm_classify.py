@@ -7,6 +7,7 @@ import sys
 
 import numpy as np
 from sklearn import metrics
+from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
@@ -16,11 +17,9 @@ import matplotlib.pyplot as plt
 DATABASE = 'studies.sqlite'
 
 
-
 if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-
 
     data = pickle.load(open(sys.argv[1], 'rb'))
     vectorizer = data['vectorizer']
@@ -35,7 +34,7 @@ if __name__ == '__main__':
 
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=200)
+    chi2_best = SelectKBest(chi2, k=175)
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print([cui_names.get(x.upper(), x) for x in np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()]])
@@ -56,15 +55,15 @@ if __name__ == '__main__':
         y_test_class[x] = []
         y_pred_class[x] = []
 
-
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
 
-        #model = svm.SVC(C=10000, decision_function_shape='ovo',
+        # model = svm.SVC(C=10000, decision_function_shape='ovo',
         #            class_weight={1: 5, 2: 12}, random_state=seed)
-        model = svm.LinearSVC(C=10, class_weight={1: 5, 2: 12}, random_state=seed)
+        # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
+        model = svm.LinearSVC(C=200, class_weight={1: 5, 2: 12}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
@@ -136,7 +135,7 @@ if __name__ == '__main__':
     plt.show()
 
 
-        # print("Count     : %s" % len(true_scores))
+    # print("Count     : %s" % len(true_scores))
     # print("CV folds  : %s" % cross_validation_count)
     # print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
     # # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
