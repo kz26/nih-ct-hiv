@@ -32,32 +32,39 @@ def get_features(study_id):
             neg_trigger = x.find('.//NegTriggerPI')
             neg_pos = int(neg_trigger.find('StartPos').text)
             neg_length = int(neg_trigger.find('Length').text)
-            # features[neg_pos] = (neg_type, neg_length)
+            features[neg_pos] = (neg_type, neg_length)
 
-            ncui = 'N' + x.find('.//NegConcCUI').text
-            names[ncui] = '[N] ' + x.find('.//NegConcMatched').text
+            # ncui = x.find('.//NegConcCUI').text
+            # for neg_pi in x.findall('.//NegConcPI'):
+            #     ncui_pos = int(neg_pi.find('StartPos').text)
+            #     ncui_length = int(neg_pi.find('Length').text)
+            #     if ncui_pos not in features or features[ncui_pos][1] < ncui_length:
+            #         neg_features[ncui_pos] = (ncui, ncui_length)
 
-            for neg_pi in x.findall('.//NegConcPI'):
-                ncui_pos = int(neg_pi.find('StartPos').text)
-                ncui_length = int(neg_pi.find('Length').text)
-                if ncui_pos not in features or features[ncui_pos][1] < ncui_length:
-                    features[ncui_pos] = (ncui, ncui_length)
-
-        for mapping in root.findall('.//Mapping[1]'):
-            for candidate in mapping.findall('.//Candidate'):
-                cui = candidate.find('CandidateCUI').text
-                names[cui] = candidate.find('CandidatePreferred').text
-                names['N' + cui] = '[N] ' + candidate.find('CandidatePreferred').text
-
-                start_pos = float('inf')
-                length = 0
-                for pi in candidate.findall('.//ConceptPI'):
-                    pos = int(pi.find('StartPos').text)
-                    l = int(pi.find('Length').text)
-                    start_pos = min(start_pos, pos)
-                    length += l + pos - start_pos
-                if start_pos not in features or features[start_pos][1] < length:
-                    features[start_pos] = (cui, length)
+        for phrase in root.findall('.//Phrase'):
+            start_pos = int(phrase.find('PhraseStartPos').text)
+            length = int(phrase.find('PhraseLength').text)
+            mappings = phrase.findall('.//Mapping[1]')
+            if len(mappings):
+                cuis = []
+                for mapping in mappings:
+                    for candidate in mapping.findall('.//Candidate'):
+                        cui = candidate.find('CandidateCUI').text
+                        concept = candidate.find('CandidatePreferred').text
+                        if int(candidate.find('Negated').text) == 1:
+                            cui = 'N' + cui
+                            concept = '[N] ' + concept
+                        names[cui] = concept
+                        cuis.append(cui)
+                    features[start_pos] = (cuis, length)
+            else:  # fall back to syntax units
+                pos_list = []
+                for su in phrase.findall('.//SyntaxUnit'):
+                    pos = su.find('SyntaxType').text
+                    if pos == 'punc':
+                        pos = ' '
+                    pos_list.append(pos)
+                features[start_pos] = (pos_list, length)
 
         features_list = []
         for k, v in features.items():
@@ -83,7 +90,7 @@ def features_to_text(features, text):
                 new_text += text[i:]
                 break
         if i == f[1]:
-            new_text += f[0]
+            new_text += ' '.join(f[0])
             i += f[2]
             f = None
         else:
@@ -115,7 +122,7 @@ if __name__ == '__main__':
             counter += 1
             # sys.stderr.write(study_id + '\n')
             # sys.stderr.write(text + '\n')
-            sys.stderr.write(str(counter) + '\n')
+            sys.stderr.write("[%s] %s\n" % (counter, study_id))
             yield text
 
     vectorizer = TfidfVectorizer(ngram_range=(1, 1))
