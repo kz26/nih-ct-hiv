@@ -92,11 +92,15 @@ if __name__ == '__main__':
         y_test_class[x] = []
         y_pred_class[x] = []
 
+    y_test_all = []
+    y_pred_all = []
 
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
+
+        y_test_all.extend(y_test)
 
         # model = MultinomialNB()
         # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
@@ -109,6 +113,7 @@ if __name__ == '__main__':
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
+        y_pred_all.extend(y_predicted)
         sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
         ap_score = []
@@ -151,6 +156,9 @@ if __name__ == '__main__':
         )
         plt.plot(recall, precision,
                  label="%s (PR-AUC = %0.2f)" % (label, stat_mean['PR-AUC score']), lw=2)
+
+    print("Confusion matrix:")
+    print(metrics.confusion_matrix(y_test_all, y_pred_all))
 
     plt.figure(1)
     plt.xlim([0.0, 1.0])
