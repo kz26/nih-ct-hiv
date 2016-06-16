@@ -38,11 +38,8 @@ def get_features(study_id):
         #     ncui = x.find('.//NegConcCUI').text
 
         for phrase in root.findall('.//Phrase'):
-            start_pos = int(phrase.find('PhraseStartPos').text)
-            length = int(phrase.find('PhraseLength').text)
             mappings = phrase.findall('.//Mapping[1]')
             if len(mappings):
-                cuis = []
                 for mapping in mappings:
                     for candidate in mapping.findall('.//Candidate'):
                         cui = candidate.find('CandidateCUI').text
@@ -52,9 +49,13 @@ def get_features(study_id):
                             cui = 'N' + cui
                             concept = '[N] ' + concept
                         names[cui] = concept
-                        cuis.append(cui)
-                    features[start_pos] = (cuis, length)
+                        for pi in candidate.findall('.//ConceptPI'):
+                            pos = int(pi.find('StartPos').text)
+                            l = int(pi.find('Length').text)
+                            features[pos] = ([cui], l)
             else:  # no mappings found, fall back to syntax units
+                start_pos = int(phrase.find('PhraseStartPos').text)
+                length = int(phrase.find('PhraseLength').text)
                 tokens = []
                 for su in phrase.findall('.//SyntaxUnit'):
                     pos = su.find('SyntaxType').text
