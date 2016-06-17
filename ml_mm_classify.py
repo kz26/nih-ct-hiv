@@ -38,8 +38,6 @@ def filter_study(title, condition, ec):
     return '\n'.join(lines)
 
 
-
-
 def vectorize_all(vectorizer, input_docs, fit=False):
     if fit:
         dtm = vectorizer.fit_transform(input_docs)
@@ -75,7 +73,7 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=260)
+    chi2_best = SelectKBest(chi2, k=200)
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
@@ -105,7 +103,7 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         y_test_all.extend(y_test)
 
-        model = svm.LinearSVC(C=200, class_weight={1: 5, 2: 20}, random_state=seed)
+        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 20}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)

@@ -16,7 +16,7 @@ def extract_cuis(study_id):
     with open(os.path.join(METAMAP_XML_DIR, study_id + '.xml')) as f:
         f.readline()  # workaround for non-XML first line
         root = ET.fromstring(f.read())
-        cuis = []
+        cui_lines = []
 
         # for x in root.find('.//Negations'):
         #     neg_type = x.find('NegType').text
@@ -28,17 +28,20 @@ def extract_cuis(study_id):
         #     ncui = x.find('.//NegConcCUI').text
 
         for phrase in root.findall('.//Phrase'):
+            cuis = []
             mappings = phrase.findall('.//Mapping[1]')
             if len(mappings):
                 for mapping in mappings:
                     for candidate in mapping.findall('.//Candidate'):
                         cui = candidate.find('CandidateCUI').text
                         concept = candidate.find('CandidatePreferred').text
-                        # sem_types = set([st.text for st in candidate.findall('.//SemType')])
-                        if int(candidate.find('Negated').text) == 1:
-                            cui = 'N' + cui
-                        cuis.append(cui)
-        return cuis
+                        sem_types = set([st.text for st in candidate.findall('.//SemType')])
+                        if sem_types & {'aapp', 'dsyn', 'lbpr', 'lbtr'}:
+                            if int(candidate.find('Negated').text) == 1:
+                                cui = 'N' + cui
+                            cuis.append(cui)
+            cui_lines.append('\n'.join(cuis))
+        return cui_lines
 
 if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
