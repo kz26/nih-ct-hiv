@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 
-import random
 import re
 import sqlite3
 import string
-import sys
 
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn import metrics
-from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import Perceptron
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.feature_selection import chi2, SelectKBest
-from sklearn import cross_validation
-from scipy import stats as ST
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats as ST
+from sklearn import cross_validation
+from sklearn import metrics
+from sklearn import svm
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import chi2, SelectKBest
+
+DATABASE = 'studies.sqlite'
 
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
@@ -46,7 +42,7 @@ def vectorize_all(vectorizer, input_docs, fit=False):
 
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(sys.argv[1])
+    conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
 
@@ -99,17 +95,9 @@ if __name__ == '__main__':
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
-
         y_test_all.extend(y_test)
 
-        # model = MultinomialNB()
-        # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-        # model = svm.SVC(C=150, decision_function_shape='ovr',
-        #                class_weight={1: 5, 2: 12}, random_state=seed)
         model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = RandomForestClassifier(class_weight='balanced')
-        # model = AdaBoostClassifier(n_estimators=100)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
@@ -184,12 +172,3 @@ if __name__ == '__main__':
 
     plt.show()
 
-
-        # print("Count     : %s" % len(true_scores))
-    # print("CV folds  : %s" % cross_validation_count)
-    # print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    # # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
-    # 
-    
-    # print("Confusion matrix:")
-    # print(confusion_matrix(true_scores, predicted_scores))

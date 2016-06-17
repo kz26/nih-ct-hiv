@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
 import pickle
-import re
 import sqlite3
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy import stats as ST
+from sklearn import cross_validation
 from sklearn import metrics
-from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.feature_selection import chi2, SelectKBest
-from sklearn import cross_validation
-from scipy import stats as ST
-import matplotlib.pyplot as plt
 
 np.set_printoptions(precision=3)
 
@@ -64,12 +62,8 @@ if __name__ == '__main__':
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
-
         y_test_all.extend(y_test)
 
-        # model = svm.SVC(C=10000, decision_function_shape='ovo',
-        #            class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
         model = svm.LinearSVC(C=8, class_weight={1: 5, 2: 12}, random_state=seed)
 
         model.fit(X_train, y_train)
@@ -144,13 +138,3 @@ if __name__ == '__main__':
     plt.legend(loc="lower left")
 
     plt.show()
-
-
-    # print("Count     : %s" % len(true_scores))
-    # print("CV folds  : %s" % cross_validation_count)
-    # print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    # # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
-    # 
-    
-    # print("Confusion matrix:")
-    # print(confusion_matrix(true_scores, predicted_scores))

@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 
-import random
+import pickle
 import re
 import sqlite3
 import string
 import sys
 
+
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import metrics
-from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import Perceptron
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
 from scipy import stats as ST
 import matplotlib.pyplot as plt
+
+DATABASE = 'studies.sqlite'
+CUI_PATH = 'cuis.pickle'
 
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
@@ -37,6 +38,8 @@ def filter_study(title, condition, ec):
     return '\n'.join(lines)
 
 
+
+
 def vectorize_all(vectorizer, input_docs, fit=False):
     if fit:
         dtm = vectorizer.fit_transform(input_docs)
@@ -46,24 +49,24 @@ def vectorize_all(vectorizer, input_docs, fit=False):
 
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(sys.argv[1])
-    c = conn.cursor()
-    c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
-
     X = []
     y = []
     study_ids = []
 
-    count = 0
-    count_positive = 0
+    CUI = pickle.load(open(CUI_PATH, 'rb'))
+
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute(
+        'SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
+
     for row in c.fetchall():
-        text = filter_study(row[1], row[2], row[3])
+        text = filter_study(row[1], row[2], row[3]) + '\n' + '\n'.join(CUI[row[0]])
+        # print(text)
         if text:
             X.append(text)
             y.append(row[4])
             study_ids.append(row[0])
-            if row[4]:
-                count_positive += 1
         else:
             print("[WARNING] no text returned from %s after filtering" % row[0])
 
@@ -72,8 +75,9 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=100)
+    chi2_best = SelectKBest(chi2, k=260)
     X = chi2_best.fit_transform(X, y)
+    print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
 
     stats = []
@@ -99,17 +103,9 @@ if __name__ == '__main__':
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
-
         y_test_all.extend(y_test)
 
-        # model = MultinomialNB()
-        # model = LogisticRegression(class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = SGDClassifier(loss='hinge', n_iter=100, penalty='elasticnet')
-        # model = svm.SVC(C=150, decision_function_shape='ovr',
-        #                class_weight={1: 5, 2: 12}, random_state=seed)
-        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 12}, random_state=seed)
-        # model = RandomForestClassifier(class_weight='balanced')
-        # model = AdaBoostClassifier(n_estimators=100)
+        model = svm.LinearSVC(C=200, class_weight={1: 5, 2: 20}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
@@ -183,13 +179,3 @@ if __name__ == '__main__':
     plt.legend(loc="lower left")
 
     plt.show()
-
-
-        # print("Count     : %s" % len(true_scores))
-    # print("CV folds  : %s" % cross_validation_count)
-    # print("Accuracy  : %s" % accuracy_score(true_scores, predicted_scores))
-    # # print("ROC-AUC   : %s" % roc_auc_score(true_scores, predicted_scores))
-    # 
-    
-    # print("Confusion matrix:")
-    # print(confusion_matrix(true_scores, predicted_scores))
