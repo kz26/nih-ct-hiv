@@ -28,18 +28,22 @@ def extract_cuis(study_id):
         #     ncui = x.find('.//NegConcCUI').text
 
         for phrase in root.findall('.//Phrase'):
-            cuis = []
-            mappings = phrase.findall('.//Mapping[1]')
+            cuis = set()
+            mappings = phrase.findall('.//Mapping')
             if len(mappings):
+                best_score = 0
                 for mapping in mappings:
-                    for candidate in mapping.findall('.//Candidate'):
-                        cui = candidate.find('CandidateCUI').text
-                        concept = candidate.find('CandidatePreferred').text
-                        sem_types = set([st.text for st in candidate.findall('.//SemType')])
-                        if sem_types & {'aapp', 'dsyn', 'lbpr', 'lbtr'}:
-                            if int(candidate.find('Negated').text) == 1:
-                                cui = 'N' + cui
-                            cuis.append(cui)
+                    score = abs(int(mapping.find('MappingScore').text))
+                    if score >= best_score:
+                        best_score = score
+                        for candidate in mapping.findall('.//Candidate'):
+                            cui = candidate.find('CandidateCUI').text
+                            concept = candidate.find('CandidatePreferred').text
+                            sem_types = set([st.text for st in candidate.findall('.//SemType')])
+                            if sem_types & {'aapp', 'dsyn', 'fndg', 'lbpr', 'lbtr', 'moft', 'phsu', 'topp', 'virs'}:
+                                if int(candidate.find('Negated').text) == 1:
+                                    cui = 'N' + cui
+                                cuis.add(cui)
             cui_lines.append('\n'.join(cuis))
         return cui_lines
 

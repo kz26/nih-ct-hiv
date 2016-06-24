@@ -68,12 +68,14 @@ if __name__ == '__main__':
         else:
             print("[WARNING] no text returned from %s after filtering" % row[0])
 
+    study_ids = np.array(study_ids)
+
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     X = vectorize_all(vectorizer, X, fit=True)
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=200)
+    chi2_best = SelectKBest(chi2, k=250)
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
@@ -94,20 +96,33 @@ if __name__ == '__main__':
         y_test_class[x] = []
         y_pred_class[x] = []
 
+    study_ids_test = []
     y_test_all = []
     y_pred_all = []
+    y_pred_proba_all = []
 
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         y_test_all.extend(y_test)
+        study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=150, class_weight={1: 5, 2: 20}, random_state=seed)
+        model = svm.LinearSVC(C=10, class_weight={1: 5, 2: 20}, random_state=seed)
+        # model = svm.SVC(C=1000, kernel='linear', class_weight='balanced', probability=True, random_state=seed)
 
         model.fit(X_train, y_train)
+
         y_predicted = model.predict(X_test)
         y_pred_all.extend(y_predicted)
+
+        y_predicted_score = model.decision_function(X_test)
+        prob_min = y_predicted_score.min()
+        prob_max = y_predicted_score.max()
+        for x in y_predicted_score:
+            p = [(i - prob_min) / (prob_max - prob_min) for i in x]
+            y_pred_proba_all.append(p)
+
         sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
         ap_score = []
@@ -129,6 +144,13 @@ if __name__ == '__main__':
         stats.append(sd)
 
         counter += 1
+
+    results = []
+    for i in range(len(y_test_all)):
+        results.append((study_ids_test[i], y_pred_all[i], y_test_all[i], y_pred_proba_all[i]))
+    results.sort(key=lambda x: (x[1], x[2]))
+    for x in results:
+        print("[%s] %s %s %s" % x)
 
     for i, label in enumerate(label_map):
         stat_mean = {}

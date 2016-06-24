@@ -1,0 +1,86 @@
+[NCT00676507] 0 1
+[NCT01306032] 0 1
+[NCT01875653] 0 1
+[NCT02157870] 0 1
+[NCT02349867] 0 1
+[NCT00803569] 0 1
+[NCT01409187] 0 1
+[NCT00085384] 0 1
+[NCT00886691] 0 1
+[NCT01603212] 0 1
+[NCT00317603] 0 1
+[NCT00550537] 0 1
+[NCT01216176] 0 1
+[NCT00003450] 0 1
+[NCT01625286] 0 1
+[NCT00004050] 0 1
+[NCT00019916] 0 1
+[NCT00071968] 0 1
+[NCT01031446] 0 1
+[NCT02195453] 0 1
+[NCT00276588] 0 2 No active serious infection (except for HIV infection)
+[NCT01881867] 0 2 annotation wrong
+[NCT00268918] 0 2 Confirmed diagnosis of HIV infection are excluded at the investigators discretion ???
+[NCT00400699] 0 2  Any race, ethnicity, gender, or HIV status allowed HIV serostatus is not evaluated specifically for study participation
+[NCT01065441] 0 2 History of HIV positivity or AIDS o HBV and/or HCV positivity is permitted (under Exclusion criteria)
+[NCT01716468] 0 2 No subjects will be excluded based on their race, religion, ethnicity, and gender or HIV status, as applicable. (negex wrong)
+[NCT02702856] 0 2 wrong annotation
+[NCT00217503] 0 2 No infection requiring chronic systemic therapy that would preclude study treatment (except HIV, hepatitis B, or hepatitis C), including, but not limited to, any of the following:
+[NCT00734890] 0 2 No evidence of...bullet points HIV infection requiring anti-HIV therapy
+[NCT01605656] 0 2 Patient receiving HIV/AIDS care at Thomas Street Health Center
+[NCT00011973] 0 2 History of HIV allowed if no active infection or history of retinitis
+[NCT00458562] 0 2 HIV seropositive and HIV seronegative (multiple arms)
+[NCT01256268] 0 2 HIV protease inhibitors
+[NCT00892736] 0 2 Human immunodeficiency virus (HIV) infected patients on protease inhibitors are ineligible; HIV infected patients with adequate cluster of differentiation 4 (CD4) counts (> 500) and not on protease inhibitors are eligible
+[NCT01205581] 0 2 Participant has a diagnosis of cancer or HIV.
+[NCT02115282] 0 2 Known human immunodeficiency virus (HIV)-positive patients should have a cluster of differentiation (CD)4 count > 250/mm^3
+[NCT02262325] 0 2 AIDS only
+[NCT00474604] 0 2 Has diabetes, HIV, renal disease or hx of renal cancer
+[NCT00002277] 0 2 HIV positive unless they have a malignancy.
+[NCT00513162] 0 2 Patients who take antiviral medications usually targeted to treat HIV infections or have clinical signs for acquired immunodeficiency syndrome (AIDS) are excluded. HIV testing is not mandatory.
+[NCT00536601] 0 2 Hematologic Malignancy patients with human immunodeficiency virus (HIV) positivity but on appropriate anti-retroviral therapy may go autotransplant with the following laboratory tests; (CD4+ cell count > 75 cells per microliter and HIV copy number < 100,000 per microliter and with Infectious Disease clearance
+[NCT01532089] 0 2 Immunocompromised patients (other than that related to the use of corticosteroids) including patients known to be human immunodeficiency virus (HIV) positive, per MD discretion
+[NCT02184533] 0 2 The subject is known to be positive for the human immunodeficiency virus (HIV) and is receiving antiretroviral therapies; subjects known to be HIV positive who do not require antiretroviral therapy will be eligible if they meet other entry criteria
+[NCT00004126] 0 2 run-on (No concurrent antiretroviral therapy for HIV positive patients)
+[NCT00324415] 0 2 Documented HIV infection by 1 of the following
+[NCT00365105] 0 2 No known AIDS HIV testing is not required
+[NCT00148694] 1 0
+[NCT00176813] 1 0
+[NCT00601289] 1 0
+[NCT00849199] 1 0
+[NCT01300299] 1 0
+[NCT01766297] 1 0
+[NCT02459912] 1 0
+[NCT00004136] 1 0
+[NCT00587925] 1 0
+[NCT00706615] 1 0
+[NCT00002596] 1 0
+[NCT01132014] 1 0
+[NCT00078390] 1 0
+[NCT00354705] 1 0
+[NCT02466061] 1 0
+[NCT00003941] 1 0
+[NCT00068497] 1 0
+[NCT00462982] 1 0
+[NCT02176746] 1 0
+[NCT00343109] 1 0
+[NCT01655225] 1 0
+[NCT02178462] 1 0
+[NCT00041171] 1 2 Anti-HIV drugs such as efavirenz or nevirapine
+[NCT01339039] 1 2 HIV-positive patients on combination antiretroviral therapy
+[NCT01624441] 2 0
+[NCT00326495] 2 0
+[NCT02427841] 2 0
+[NCT00025090] 2 0
+[NCT02764541] 2 0
+[NCT00053989] 2 0
+[NCT01010126] 2 0
+[NCT01273896] 2 0
+[NCT01306058] 2 0
+[NCT01678443] 2 0
+[NCT01705340] 2 0
+[NCT02117895] 2 0
+[NCT01567722] 2 0
+[NCT01264432] 2 0
+[NCT02152995] 2 0
+[NCT02151032] 2 1
