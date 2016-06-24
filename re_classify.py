@@ -4,8 +4,8 @@ import re
 import sqlite3
 import sys
 
-from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, confusion_matrix
-
+import numpy as np
+from sklearn import metrics
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -140,19 +140,21 @@ if __name__ == '__main__':
         labels.append(row[0])
         counter += 1
 
-    # mismatches_fp = []
-    # mismatches_fn = []
-    # for i in range(len(true_scores)):
-    #     if true_scores[i] != predicted_scores[i]:
-    #         if predicted_scores[i] == 0:
-    #             mismatches_fn.append(labels[i])
-    #         else:
-    #             mismatches_fp.append(labels[i])
-    # print("FP       : %s" % str(mismatches_fp))
-    # print("FN       : %s" % str(mismatches_fn))
+    true_scores = np.array(true_scores)
+    predicted_scores = np.array(predicted_scores)
+
     print("Count    : %s" % len(true_scores))
-    print("Accuracy : %s" % accuracy_score(true_scores, predicted_scores))
-    # print("ROC-AUC  : %s" % roc_auc_score(true_scores, predicted_scores))
-    print(classification_report(true_scores, predicted_scores, target_names=['HIV-ineligible', 'indeterminate', 'HIV-eligible']))
+    print("Accuracy : %s" % metrics.accuracy_score(true_scores, predicted_scores))
+    f2s = []
+    prauc = []
+    for i in range(3):
+        bt = (true_scores == i)
+        bp = (predicted_scores == i)
+        f2s.append(metrics.fbeta_score(bt, bp, beta=2.0))
+        prauc.append(metrics.average_precision_score(bt, bp))
+    print("F2 score : %s" % f2s)
+    print("PR-AUC   : %s" % prauc)
+    print(metrics.classification_report(true_scores, predicted_scores,
+                                        target_names=['HIV-ineligible', 'indeterminate', 'HIV-eligible']))
     print("Confusion matrix:")
-    print(confusion_matrix(true_scores, predicted_scores))
+    print(metrics.confusion_matrix(true_scores, predicted_scores))
