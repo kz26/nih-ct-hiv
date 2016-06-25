@@ -128,7 +128,7 @@ if __name__ == '__main__':
         ap_score = []
         for i, label in enumerate(label_map):
             bt = (y_test == i)
-            bp = (y_predicted == i)
+            bp = y_predicted_score[:,i]
             y_test_class[label].extend(list(bt))
             y_pred_class[label].extend(list(bp))
 
@@ -144,6 +144,8 @@ if __name__ == '__main__':
         stats.append(sd)
 
         counter += 1
+
+    y_pred_proba_all = np.array(y_pred_proba_all)
 
     results = []
     for i in range(len(y_test_all)):
