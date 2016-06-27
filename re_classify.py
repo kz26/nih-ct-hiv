@@ -129,8 +129,9 @@ if __name__ == '__main__':
     predicted_scores = []
     labels = []
 
-    c.execute(
-        "SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId")
+    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
+        FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
+        ORDER BY t1.NCTId")
 
     counter = 1
     for row in c.fetchall():
