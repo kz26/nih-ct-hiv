@@ -76,7 +76,7 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=250)
+    chi2_best = SelectKBest(chi2, k=500)
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
