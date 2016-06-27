@@ -184,7 +184,7 @@ if __name__ == '__main__':
     plt.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Mean ROC')
+    plt.title('ML')
     plt.legend(loc="lower right")
 
     plt.figure(2)
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     plt.ylabel('Precision')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
-    plt.title('Precision-Recall')
+    plt.title('ML')
     plt.legend(loc="lower left")
 
     plt.show()
