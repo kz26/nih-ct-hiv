@@ -57,7 +57,7 @@ if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
-        FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId \
+        FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
         ORDER BY t1.NCTId")
 
     for row in c.fetchall():
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=250)
+    chi2_best = SelectKBest(chi2, k=1000)
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
@@ -114,8 +114,6 @@ if __name__ == '__main__':
         study_ids_test.extend(list(study_ids[test]))
 
         model = svm.LinearSVC(C=10, class_weight={1: 5}, random_state=seed)
-        # model = svm.SVC(C=1000, kernel='linear', class_weight='balanced', probability=True, random_state=seed)
-
         model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)

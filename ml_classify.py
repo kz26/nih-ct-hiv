@@ -45,7 +45,7 @@ if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
-               FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId \
+               FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
                ORDER BY t1.NCTId")
 
     X = []
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=100)
+    chi2_best = SelectKBest(chi2, k=250)
     X = chi2_best.fit_transform(X, y)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=125, class_weight={1: 5, 2: 20}, random_state=seed)
+        model = svm.LinearSVC(C=150, class_weight={1: 10, 2: 20}, random_state=seed)
 
         model.fit(X_train, y_train)
         y_predicted = model.predict(X_test)
@@ -156,6 +156,7 @@ if __name__ == '__main__':
             stat_mean[metric] = sd_mean
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
             print("%s %s: %s %s" % (label, metric, sd_mean, sd_ci))
+        print("%s count: %s" % (label, len([x for x in y_pred_all if x == i])))
 
         plt.figure(1)
         mean_tpr[label] /= folds

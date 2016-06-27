@@ -64,9 +64,9 @@ class Database(object):
 
     def annotate_interactive(self):
         c = self.conn.cursor()
-        c.execute('SELECT NCTId, BriefTitle, Condition, StudyType, EligibilityCriteria FROM studies \
-                  WHERE NOT EXISTS(SELECT * FROM hiv_status \
-                                   WHERE studies.NCTId=hiv_status.NCTId) ORDER BY random()')
+        c.execute("SELECT NCTId, BriefTitle, Condition, StudyType, EligibilityCriteria FROM studies \
+                  WHERE StudyType LIKE '%Interventional%' AND NOT EXISTS(SELECT * FROM hiv_status \
+                                   WHERE studies.NCTId=hiv_status.NCTId) ORDER BY random()")
         for row in c.fetchall():
             self.prompt_for_annotation(row[0], (row[1], row[2].replace('\n', ', '), row[3], row[4]), allow_skip=True)
             sleep(0.5)
