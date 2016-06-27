@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Binary classifier - combine classes 1 (indeterminate) and 2 (HIV-eligible)
 
 import pickle
 import re
@@ -11,7 +12,6 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import metrics
 from sklearn import svm
-from sklearn.linear_model import LogisticRegression
 
 from sklearn.feature_selection import chi2, SelectKBest
 from sklearn import cross_validation
@@ -56,8 +56,9 @@ if __name__ == '__main__':
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute(
-        'SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
+    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
+        FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId \
+        ORDER BY t1.NCTId")
 
     for row in c.fetchall():
         text = filter_study(row[1], row[2], row[3]) + '\n' + '\n'.join(CUI[row[0]])
@@ -112,8 +113,8 @@ if __name__ == '__main__':
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=50, class_weight={1: 5}, random_state=seed)
-        # model = LogisticRegression(C=100, class_weight={1: 5})
+        model = svm.LinearSVC(C=10, class_weight={1: 5}, random_state=seed)
+        # model = svm.SVC(C=1000, kernel='linear', class_weight='balanced', probability=True, random_state=seed)
 
         model.fit(X_train, y_train)
 
@@ -123,18 +124,21 @@ if __name__ == '__main__':
         y_predicted_score = model.decision_function(X_test)
         prob_min = y_predicted_score.min()
         prob_max = y_predicted_score.max()
-        for i in y_predicted_score:
-            p = (i - prob_min) / (prob_max - prob_min)
-            y_pred_proba_all.append(p)
+        for x in y_predicted_score:
+            p = (x - prob_min) / (prob_max - prob_min)
+            y_pred_proba_all.append((1-p, p))
 
         sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
         ap_score = []
         for i, label in enumerate(label_map):
             bt = (y_test == i)
-            bp = (y_predicted == i)
+            if i == 0:
+                bp = [1-x for x in y_predicted_score]
+            else:
+                bp = [x for x in y_predicted_score]
             y_test_class[label].extend(list(bt))
-            y_pred_class[label].extend(list(bp))
+            y_pred_class[label].extend(bp)
 
             aucs.append(metrics.roc_auc_score(bt, bp))
             fpr, tpr, thresholds = metrics.roc_curve(bt, bp)
@@ -148,6 +152,8 @@ if __name__ == '__main__':
         stats.append(sd)
 
         counter += 1
+
+    y_pred_proba_all = np.array(y_pred_proba_all)
 
     results = []
     for i in range(len(y_test_all)):

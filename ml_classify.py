@@ -44,7 +44,9 @@ def vectorize_all(vectorizer, input_docs, fit=False):
 if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute('SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId ORDER BY t1.NCTId')
+    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
+               FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId \
+               ORDER BY t1.NCTId")
 
     X = []
     y = []
