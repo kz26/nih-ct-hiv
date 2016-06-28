@@ -2,8 +2,11 @@
 
 import argparse
 import os
+import re
 import requests
 import sqlite3
+import string
+import subprocess
 import sys
 import webbrowser
 from time import sleep
@@ -88,6 +91,37 @@ class Database(object):
                                    (values[5], values[6].replace('\n', ', '), values[7], values[4], values[8]))
         self.print_status()
 
+    def print(self, study_id, print_ascii, raw):
+        c = self.conn.cursor()
+        c.execute(
+            'SELECT t1.BriefTitle, t1.Condition, t1.EligibilityCriteria \
+             FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=? AND t1.NCTId=t2.NCTId ORDER BY t1.NCTId',
+            [study_id])
+        row = c.fetchone()
+        if raw:
+            text = '\n'.join(row)
+        else:
+            title, condition, ec = row
+            lines = [title + '.']
+            for l in condition.split('\n'):
+                lines.append(l + '.')
+            segments = re.split(
+                r'\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +| (?=[A-Z][a-z])',
+                ec, flags=re.MULTILINE)
+            for i, l in enumerate(segments):
+                l = l.strip()
+                if l:
+                    if l:
+                        if ' ' in l and l[-1] not in string.punctuation:
+                            l += '.'
+                        lines.append(l)
+            text = '\n'.join(lines)
+        if print_ascii:
+            cp = subprocess.run(['iconv', '-t', 'ascii//TRANSLIT'], input=text, stdout=subprocess.PIPE,
+                                universal_newlines=True)
+            text = cp.stdout
+        print(text)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -98,14 +132,22 @@ if __name__ == '__main__':
 
     parser_interactive = subparsers.add_parser('interactive',
                                                help='annotate unlabeled studies from the database interactively')
+
     parser_cherry_pick = subparsers.add_parser('cherry-pick', help='add and annotate a study from ClinicalTrials.gov')
     parser_cherry_pick.add_argument('study_id', help='NCTID identifier from ClinicalTrials.gov')
+
+    parser_print = subparsers.add_parser('print', help='output the title, condition, and EC of a study')
+    parser_print.add_argument('study_id', help='NCTID identifier from ClinicalTrials.gov')
+    parser_print.add_argument('--ascii', help='convert to ASCII', action='store_true')
+    parser_print.add_argument('--raw', help='output as-is without any processing', action='store_true')
 
     ns = parser.parse_args()
     db = Database(ns.db_path)
     if ns.subcmd == 'interactive':
         db.annotate_interactive()
-    elif ns.subcmd =='cherry-pick':
+    elif ns.subcmd == 'cherry-pick':
         db.cherry_pick(ns.study_id)
+    elif ns.subcmd == 'print':
+        db.print(ns.study_id, ns.ascii, ns.raw)
 
 
