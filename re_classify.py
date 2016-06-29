@@ -73,6 +73,8 @@ REGEXES = ALWAYS_POSITIVE_REGEXES + NEGATIVE_REGEXES + POSITIVE_ONLY_REGEXES + P
 
 
 def score_text(label, text):
+    if not (re.search('HIV', text) or re.search('human immunodeficiency virus', text, flags=re.IGNORECASE)):
+        return 1
     chunks = re.split(r"^(.*(?:criteri|characteristics).*)$", text, flags=re.MULTILINE | re.IGNORECASE)
     score = 0
     multiplier = 1

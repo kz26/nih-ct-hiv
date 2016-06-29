@@ -82,8 +82,10 @@ if __name__ == '__main__':
     X = vectorize_all(vectorizer, X, fit=True)
     y = np.array(y)
 
-    chi2_best = SelectKBest(chi2, k=500)
+    chi2_best = SelectKBest(chi2, k=1000)
     X = chi2_best.fit_transform(X, y)
+    print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
+
 
     stats = []
     seed = 0
@@ -113,7 +115,7 @@ if __name__ == '__main__':
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=100, class_weight={0: 8}, random_state=seed)
+        model = svm.LinearSVC(C=25, class_weight={1: 10}, random_state=seed)
         model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)
@@ -157,9 +159,6 @@ if __name__ == '__main__':
     for i in range(len(y_test_all)):
         results.append((study_ids_test[i], y_pred_all[i], y_test_all[i], y_pred_proba_all[i]))
     results.sort(key=lambda x: (x[1], x[2]))
-    for x in results:
-        if x[1] == 1:
-            print(x[0])
 
     for i, label in enumerate(label_map):
         stat_mean = {}
