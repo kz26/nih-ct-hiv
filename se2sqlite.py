@@ -1,34 +1,57 @@
 #!/usr/bin/env python3
 
+import argparse
+from collections import OrderedDict
+import random
 import sqlite3
 import sys
 import xml.etree.ElementTree as ET
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', dest='category', default='main',
+                        help='a category to associate with the study records being added')
+    parser.add_argument('-p', dest='probability', type=float, default=1.0,
+                        help='selection probability from 0.0-1.0')
+    parser.add_argument('input_xml', help='path to the input XML file')
+    parser.add_argument('output_db', help='path to the output database file')
 
-    conn = sqlite3.connect(sys.argv[1])
+    ns = parser.parse_args()
+
+    tree = ET.parse(ns.input_xml)
+    root = tree.getroot()
+
+    col_schema = OrderedDict()
+    for child in root.find('STUDY'):
+        col_schema[child.tag] = 'text'
+        if child.tag == 'NCTId':
+            col_schema[child.tag] += ' PRIMARY KEY'
+    col_schema['category'] = 'text'
+    print(col_schema)
+
+    conn = sqlite3.connect(ns.output_db)
     c = conn.cursor()
-
-    tree = ET.parse(sys.argv[2])
-
-    first_row = tree.find('row')
-    col_schema = []
-    for cell in first_row.iter('cell'):
-        schema = [cell.get('column'), 'text']
-        if schema[0] == 'NCTId':
-            schema.append('PRIMARY KEY')
-        col_schema.append(schema)
-    c.execute("CREATE TABLE IF NOT EXISTS studies (%s)" % ', '.join([' '.join(x) for x in col_schema]))
+    c.execute("CREATE TABLE IF NOT EXISTS studies (%s)" % ', '.join([' '.join([k, col_schema[k]]) for k in col_schema]))
     counter = 0
-    for row in tree.iter('row'):
-        values = []
-        for cell in row.iter('cell'):
-            values.append(cell.text)
-        assert(len(values) == len(col_schema))
-        placeholder = ','.join('?' * len(col_schema))
-        c.execute("INSERT OR REPLACE INTO studies VALUES(%s)" % placeholder, values)
-        counter += 1
+    for study in root.findall('STUDY'):
+        if random.random() > 1 - ns.probability:
+            values = OrderedDict()
+            for child in study:
+                if child.tag in values:
+                    values[child.tag] += '\n' + child.text
+                else:
+                    values[child.tag] = child.text
+            values['category'] = ns.category
+            assert(len(values.keys()) == len(col_schema.keys()))
+            placeholder = ','.join('?' * len(col_schema.keys()))
+            try:
+                c.execute("INSERT INTO studies VALUES(%s)" % placeholder, tuple(values.values()))
+            except sqlite3.IntegrityError as e:
+                print(values.get('NCTId', '') + ' ' + str(e))
+            else:
+                counter += 1
+                print(counter)
     print("Added/updated %s records" % counter)
     conn.commit()
     conn.close()
