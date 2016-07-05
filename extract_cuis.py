@@ -55,9 +55,9 @@ if __name__ == '__main__':
     data = {}
     i = 0
     for row in c.fetchall():
-        study_id = row[0]
-        data[study_id] = extract_cuis(study_id)
         i += 1
-        sys.stderr.write(str(i) + '\n')
+        study_id = row[0]
+        sys.stderr.write(str(i) + ' ' + study_id + '\n')
+        data[study_id] = extract_cuis(study_id)
     pickle.dump(data, sys.stdout.buffer)
 

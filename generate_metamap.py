@@ -15,5 +15,5 @@ if __name__ == '__main__':
         study_id = row[0]
         out_file = os.path.join(OUTPUT_DIR, study_id + '.xml')
         if not os.path.exists(out_file):
-            print("./print_study.py %s | metamap --XMLf --prune 35 --blanklines 0 --negex > %s"
-                  % (study_id, out_file))
+            print("./manual_annotator.py print --ec-only --ascii %s | \
+metamap --XMLf --prune 35 --blanklines 0 --negex > %s" % (study_id, out_file))

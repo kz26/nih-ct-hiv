@@ -23,9 +23,9 @@ CUI_PATH = 'cuis.pickle'
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
 
-def filter_study(title, condition, ec):
+def filter_study(ec):
     """take one study and returns a filtered version with only relevant lines included"""
-    lines = [title, condition]
+    lines = []
     segments = re.split(
         r'\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +| (?=[A-Z][a-z])',
         ec, flags=re.MULTILINE)
@@ -55,16 +55,16 @@ if __name__ == '__main__':
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
+    c.execute("SELECT t1.NCTId, t1.EligibilityCriteria, t2.hiv_eligible \
         FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
         ORDER BY t1.NCTId")
 
     for row in c.fetchall():
-        text = filter_study(row[1], row[2], row[3]) + '\n' + '\n'.join(CUI[row[0]])
+        text = filter_study(row[1]) + '\n' + '\n'.join(CUI[row[0]])
         # print(text)
         if text:
             X.append(text)
-            y.append(row[4])
+            y.append(row[2])
             study_ids.append(row[0])
         else:
             print("[WARNING] no text returned from %s after filtering" % row[0])

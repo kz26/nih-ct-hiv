@@ -91,7 +91,7 @@ class Database(object):
                                    (values[5], values[6].replace('\n', ', '), values[7], values[4], values[8]))
         self.print_status()
 
-    def print(self, study_id, print_ascii, raw):
+    def print(self, study_id, ec_only=False, print_ascii=False, raw=False):
         c = self.conn.cursor()
         c.execute(
             'SELECT t1.BriefTitle, t1.Condition, t1.EligibilityCriteria \
@@ -99,12 +99,18 @@ class Database(object):
             [study_id])
         row = c.fetchone()
         if raw:
-            text = '\n'.join(row)
+            if ec_only:
+                text = row[2]
+            else:
+                text = '\n'.join(row)
         else:
             title, condition, ec = row
-            lines = [title + '.']
-            for l in condition.split('\n'):
-                lines.append(l + '.')
+            if ec_only:
+                lines = []
+            else:
+                lines = [title + '.']
+                for l in condition.split('\n'):
+                    lines.append(l + '.')
             segments = re.split(
                 r'\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|(?:[A-Z][A-Za-z]+ )+?[A-Z][A-Za-z]+: +|; +| (?=[A-Z][a-z])',
                 ec, flags=re.MULTILINE)
@@ -138,6 +144,7 @@ if __name__ == '__main__':
 
     parser_print = subparsers.add_parser('print', help='output the title, condition, and EC of a study')
     parser_print.add_argument('study_id', help='NCTID identifier from ClinicalTrials.gov')
+    parser_print.add_argument('--ec-only', help='print eligibility criteria only', action='store_true')
     parser_print.add_argument('--ascii', help='convert to ASCII', action='store_true')
     parser_print.add_argument('--raw', help='output as-is without any processing', action='store_true')
 
@@ -148,6 +155,6 @@ if __name__ == '__main__':
     elif ns.subcmd == 'cherry-pick':
         db.cherry_pick(ns.study_id)
     elif ns.subcmd == 'print':
-        db.print(ns.study_id, ns.ascii, ns.raw)
+        db.print(ns.study_id, ec_only=ns.ec_only, print_ascii=ns.ascii, raw=ns.raw)
 
 
