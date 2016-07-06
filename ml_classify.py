@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import pickle
 import re
 import sqlite3
 import string
@@ -72,9 +73,9 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=250)
-    X = chi2_best.fit_transform(X, y)
-    print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
+    chi2_kbest = SelectKBest(chi2, k=250)
+    X = chi2_kbest.fit_transform(X, y)
+    print(np.asarray(vectorizer.get_feature_names())[chi2_kbest.get_support()])
 
     stats = []
     seed = 0
@@ -99,14 +100,15 @@ if __name__ == '__main__':
 
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
+    models = []
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
         model = svm.LinearSVC(C=15, class_weight={1: 10, 2: 20}, random_state=seed)
-
         model.fit(X_train, y_train)
+
         y_predicted = model.predict(X_test)
         y_pred_all.extend(y_predicted)
 
@@ -136,6 +138,8 @@ if __name__ == '__main__':
         sd.append(tuple(aucs))
         sd.append(tuple(ap_score))
         stats.append(sd)
+
+        models.append((model, ap_score[-1]))
 
         counter += 1
 
@@ -172,6 +176,17 @@ if __name__ == '__main__':
 
     print("Confusion matrix:")
     print(metrics.confusion_matrix(y_test_all, y_pred_all))
+
+    # Export vectorizer and classifier
+    models.sort(key=lambda x: x[1], reverse=True)  # sort models by highest HIV-eligible PR-AUC
+    data_export = {
+        'vectorizer': vectorizer,
+        'chi2_kbest': chi2_kbest,
+        'model': models[0][0]
+    }
+    with open('cancer_hiv_model.pickle', 'wb') as f:
+        pickle.dump(data_export, f)
+        print("Exported model to cancer_hiv_model.pickle")
 
     plt.figure(1)
     plt.xlim([0.0, 1.0])
