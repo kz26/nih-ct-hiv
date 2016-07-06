@@ -63,8 +63,11 @@ if __name__ == '__main__':
         text = filter_study(row[1]) + '\n' + '\n'.join(CUI[row[0]])
         # print(text)
         if text:
+            yv = row[2]
+            if yv == 3:
+                yv = 2
             X.append(text)
-            y.append(row[2])
+            y.append(yv)
             study_ids.append(row[0])
         else:
             print("[WARNING] no text returned from %s after filtering" % row[0])
@@ -109,7 +112,7 @@ if __name__ == '__main__':
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=10, class_weight={1: 10, 2: 20}, random_state=seed)
+        model = svm.LinearSVC(C=15, class_weight={1: 10, 2: 20}, random_state=seed)
         model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)
@@ -161,6 +164,7 @@ if __name__ == '__main__':
             stat_mean[metric] = sd_mean
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
             print("%s %s: %s %s" % (label, metric, sd_mean, sd_ci))
+        print("%s count: %s" % (label, len([x for x in y_pred_all if x == i])))
 
         plt.figure(1)
         mean_tpr[label] /= folds

@@ -56,8 +56,11 @@ if __name__ == '__main__':
     for row in c.fetchall():
         text = filter_study(row[1])
         if text:
+            yv = row[2]
+            if yv == 3:
+                yv = 2
             X.append(text)
-            y.append(row[2])
+            y.append(yv)
             study_ids.append(row[0])
         else:
             print("[WARNING] no text returned from %s after filtering" % row[0])
