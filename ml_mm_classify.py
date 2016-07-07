@@ -112,7 +112,7 @@ if __name__ == '__main__':
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=15, class_weight={1: 10, 2: 20}, random_state=seed)
+        model = svm.LinearSVC(C=50, class_weight={1: 5, 2: 25}, random_state=seed)
         model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)
