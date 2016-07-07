@@ -160,7 +160,7 @@ if __name__ == '__main__':
             stat_mean[metric] = sd_mean
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
             print("%s %s: %s %s" % (label, metric, sd_mean, sd_ci))
-        print("%s count: %s" % (label, len([x for x in y_pred_all if x == i])))
+        print("%s count: %s" % (label, len([x for x in y_test_all if x == i])))
 
         plt.figure(1)
         mean_tpr[label] /= folds
