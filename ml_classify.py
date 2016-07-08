@@ -156,6 +156,7 @@ if __name__ == '__main__':
         stat_mean = {}
         for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score', 'PR-AUC score')):
             sd = [x[j][i] for x in stats]
+            print("%s %s: %s" % (label, metric, sd))
             sd_mean = np.mean(sd)
             stat_mean[metric] = sd_mean
             sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
