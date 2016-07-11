@@ -62,7 +62,8 @@ if __name__ == '__main__':
     c = conn.cursor()
     c.execute('SELECT studies.NCTId, studies.EligibilityCriteria, annotations.%s \
         FROM studies, annotations WHERE studies.NCTId=annotations.NCTId \
-        AND studies.StudyType LIKE "%%Interventional%%" ORDER BY studies.NCTId' % config['annotation'])
+        AND studies.StudyType LIKE "%%Interventional%%" AND annotations.%s IS NOT NULL \
+        ORDER BY studies.NCTId' % (config['annotation'], config['annotation']))
 
     X = []
     y = []
@@ -78,6 +79,7 @@ if __name__ == '__main__':
             for mr in config.get('merge', []):
                 if yv in mr:
                     yv = mr[0]
+                    break
             X.append(text)
             y.append(yv)
             study_ids.append(row[0])
@@ -137,17 +139,29 @@ if __name__ == '__main__':
         prob_min = y_predicted_score.min()
         prob_max = y_predicted_score.max()
         for x in y_predicted_score:
-            p = [(i - prob_min) / (prob_max - prob_min) for i in x]
-            y_pred_proba_all.append(p)
+            if len(label_map) > 2:  # handle binary vs multiclass probability format
+                p = [(i - prob_min) / (prob_max - prob_min) for i in x]
+                y_pred_proba_all.append(p)
+            else:
+                p = (x - prob_min) / (prob_max - prob_min)
+                y_pred_proba_all.append((1 - p, p))
 
         sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
         aucs = []
         ap_score = []
         for i, label in enumerate(label_map):
             bt = (y_test == i)
-            bp = y_predicted_score[:,i]
+            print(len(bt))
             y_test_class[label].extend(list(bt))
-            y_pred_class[label].extend(list(bp))
+            if len(label_map) > 2:
+                bp = y_predicted_score[:,i]
+                y_pred_class[label].extend(list(bp))
+            else:
+                if i == 0:
+                    bp = [-x for x in y_predicted_score]
+                else:
+                    bp = [x for x in y_predicted_score]
+                y_pred_class[label].extend(bp)
 
             aucs.append(metrics.roc_auc_score(bt, bp))
             fpr, tpr, thresholds = metrics.roc_curve(bt, bp)

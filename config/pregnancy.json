@@ -1,0 +1,24 @@
+{
+  "database": "studies_cs.sqlite",
+  "title": "ML",
+  "annotation": "pregnancy",
+  "labels": [
+    "pregnancy excluded",
+    "pregnancy not excluded"
+  ],
+  "merge": [
+    [
+      1,
+      2,
+      3
+    ]
+  ],
+  "use_cuis": false,
+  "svm": {
+    "C": 50,
+    "class_weight": [
+      1,
+      2
+    ]
+  }
+}
