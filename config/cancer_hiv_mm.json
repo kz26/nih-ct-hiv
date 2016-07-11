@@ -1,0 +1,26 @@
+{
+  "database": "studies.sqlite",
+  "title": "ML with NER",
+  "annotation": "hiv",
+  "labels": [
+    "HIV-ineligible",
+    "indeterminate",
+    "HIV-eligible"
+  ],
+  "merge": [
+    [
+      2,
+      3
+    ]
+  ],
+  "use_cuis": true,
+  "cui_file": "cuis/cuis.pickle",
+  "svm": {
+    "C": 50,
+    "class_weight": [
+      1,
+      5,
+      25
+    ]
+  }
+}

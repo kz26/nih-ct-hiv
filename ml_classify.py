@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 
+import json
 import pickle
+import pprint
 import re
 import sqlite3
 import string
+import sys
 
-import matplotlib.pyplot as plt
+
 import numpy as np
-from scipy import stats as ST
-from sklearn import cross_validation
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import metrics
 from sklearn import svm
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import chi2, SelectKBest
 
-DATABASE = 'studies.sqlite'
+from sklearn.feature_selection import chi2, SelectKBest
+from sklearn import cross_validation
+from scipy import stats as ST
+import matplotlib.pyplot as plt
 
 REMOVE_PUNC = str.maketrans({key: None for key in string.punctuation})
 
@@ -43,23 +46,38 @@ def vectorize_all(vectorizer, input_docs, fit=False):
 
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(DATABASE)
+
+    np.set_printoptions(precision=2)
+
+    with open(sys.argv[1]) as f:
+        config = json.load(f)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(config)
+    if config.get('use_cuis', False):
+        CUI = pickle.load(open(config['cui_file'], 'rb'))
+    else:
+        CUI = None
+
+    conn = sqlite3.connect(config['database'])
     c = conn.cursor()
-    c.execute("SELECT t1.NCTId, t1.EligibilityCriteria, t2.hiv_eligible \
-               FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
-               ORDER BY t1.NCTId")
+    c.execute('SELECT studies.NCTId, studies.EligibilityCriteria, annotations.%s \
+        FROM studies, annotations WHERE studies.NCTId=annotations.NCTId \
+        AND studies.StudyType LIKE "%%Interventional%%" ORDER BY studies.NCTId' % config['annotation'])
 
     X = []
     y = []
     study_ids = []
 
-    count = 0
     for row in c.fetchall():
         text = filter_study(row[1])
+        if config.get('use_cuis', False):
+            text += '\n' + '\n'.join(CUI[row[0]])
+        # print(text)
         if text:
             yv = row[2]
-            if yv == 3:
-                yv = 2
+            for mr in config.get('merge', []):
+                if yv in mr:
+                    yv = mr[0]
             X.append(text)
             y.append(yv)
             study_ids.append(row[0])
@@ -73,16 +91,17 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_kbest = SelectKBest(chi2, k=250)
-    X = chi2_kbest.fit_transform(X, y)
-    print(np.asarray(vectorizer.get_feature_names())[chi2_kbest.get_support()])
+    chi2_best = SelectKBest(chi2, k=250)
+    X = chi2_best.fit_transform(X, y)
+    print(X.shape)
+    print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
 
     stats = []
     seed = 0
     folds = 10
     print("CV folds: %s" % folds)
 
-    label_map = ('HIV-ineligible', 'indeterminate', 'HIV-eligible')
+    label_map = config['labels']
     mean_fpr = {}
     mean_tpr = {}
     y_test_class = {}
@@ -100,13 +119,15 @@ if __name__ == '__main__':
 
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
-    models = []
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(C=50, class_weight={1: 5, 2: 25}, random_state=seed)
+        model = svm.LinearSVC(
+            C=config['svm']['C'],
+            class_weight=dict(zip(range(len(config['svm']['class_weight'])), config['svm']['class_weight'])),
+            random_state=seed)
         model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)
@@ -135,11 +156,9 @@ if __name__ == '__main__':
 
             ap_score.append(metrics.average_precision_score(bt, bp))
 
-        sd.append(tuple(aucs))
-        sd.append(tuple(ap_score))
+        sd.append(np.array(aucs))
+        sd.append(np.array(ap_score))
         stats.append(sd)
-
-        models.append((model, ap_score[-1]))
 
         counter += 1
 
@@ -155,12 +174,12 @@ if __name__ == '__main__':
     for i, label in enumerate(label_map):
         stat_mean = {}
         for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score', 'PR-AUC score')):
-            sd = [x[j][i] for x in stats]
+            sd = np.array([x[j][i] for x in stats])
             print("%s %s: %s" % (label, metric, sd))
             sd_mean = np.mean(sd)
             stat_mean[metric] = sd_mean
-            sd_ci = ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd))
-            print("%s %s: %s %s" % (label, metric, sd_mean, sd_ci))
+            sd_ci = np.array(ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd)))
+            print("%s %s: %.2f %s" % (label, metric, sd_mean, sd_ci))
         print("%s count: %s" % (label, len([x for x in y_test_all if x == i])))
 
         plt.figure(1)
@@ -178,17 +197,6 @@ if __name__ == '__main__':
     print("Confusion matrix:")
     print(metrics.confusion_matrix(y_test_all, y_pred_all))
 
-    # Export vectorizer and classifier
-    models.sort(key=lambda x: x[1], reverse=True)  # sort models by highest HIV-eligible PR-AUC
-    data_export = {
-        'vectorizer': vectorizer,
-        'chi2_kbest': chi2_kbest,
-        'model': models[0][0]
-    }
-    with open('cancer_hiv_model.pickle', 'wb') as f:
-        pickle.dump(data_export, f)
-        print("Exported model to cancer_hiv_model.pickle")
-
     plt.figure(1)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
@@ -200,7 +208,7 @@ if __name__ == '__main__':
     plt.plot(limits, limits, 'k-', alpha=0.75, zorder=0)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ML')
+    plt.title(config["title"])
     plt.legend(loc="lower right")
 
     plt.figure(2)
@@ -208,8 +216,7 @@ if __name__ == '__main__':
     plt.ylabel('Precision')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.0])
-    plt.title('ML')
+    plt.title(config["title"])
     plt.legend(loc="lower left")
 
     plt.show()
-

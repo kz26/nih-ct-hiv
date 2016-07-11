@@ -1,0 +1,25 @@
+{
+  "database": "studies.sqlite",
+  "title": "ML",
+  "annotation": "hiv",
+  "labels": [
+    "HIV-ineligible",
+    "indeterminate",
+    "HIV-eligible"
+  ],
+  "merge": [
+    [
+      2,
+      3
+    ]
+  ],
+  "use_cuis": false,
+  "svm": {
+    "C": 50,
+    "class_weight": [
+      1,
+      5,
+      25
+    ]
+  }
+}
