@@ -1,0 +1,21 @@
+{
+  "database": "studies_cs.sqlite",
+  "title": "ML",
+  "annotation": "hiv",
+  "labels": [
+    "hiv excluded",
+    "hiv not excluded"
+  ],
+  "merge": [
+    [
+      1,
+      2,
+      3
+    ]
+  ],
+  "use_cuis": false,
+  "svm": {
+    "C": 50,
+    "class_weight": "balanced"
+  }
+}

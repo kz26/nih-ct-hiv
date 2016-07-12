@@ -155,7 +155,6 @@ if __name__ == '__main__':
         ap_score = []
         for i, label in enumerate(label_map):
             bt = (y_test == i)
-            print(len(bt))
             y_test_class[label].extend(list(bt))
             if len(label_map) > 2:
                 bp = y_predicted_score[:,i]

@@ -2,10 +2,12 @@
 
 import re
 import sqlite3
-import sys
 
 import numpy as np
-from sklearn import metrics
+from sklearn import metrics, cross_validation
+from scipy import stats as ST
+
+DATABASE = 'studies.sqlite'
 
 ALWAYS_POSITIVE_SIGNATURES = (
     r'(HIV|human immunodeficiency virus) testing is not required',
@@ -88,7 +90,8 @@ def score_text(label, text):
                 multiplier = 1
                 print("[INCLUSION BLOCK]")
         pre = None
-        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +)', blk, flags=re.MULTILINE)
+        segments = re.split(r'(\n+|(?:[A-Za-z0-9\(\)]{2,}\. +)|(?:[0-9]+\. +)|[A-Za-z]+ ?: +|; +)', blk,
+                            flags=re.MULTILINE)
         for i, l in enumerate(segments):
             if l:
                 l = l.strip()
@@ -119,45 +122,78 @@ def score_text(label, text):
         return 1
 
 
-
 if __name__ == '__main__':
+    np.set_printoptions(precision=2)
+    
     for x in REGEXES:
         print(x)
 
-    conn = sqlite3.connect(sys.argv[1])
+    conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
 
-    true_scores = []
-    predicted_scores = []
-    labels = []
+    X = []
+    y = []
+    study_ids = []
 
-    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv_eligible \
-        FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
-        ORDER BY t1.NCTId")
+    c.execute("SELECT t1.NCTId, t1.BriefTitle, t1.Condition, t1.EligibilityCriteria, t2.hiv \
+        FROM studies AS t1, annotations AS t2 WHERE t1.NCTId=t2.NCTId AND t1.StudyType LIKE '%Interventional%' \
+        AND t2.hiv IS NOT NULL ORDER BY t1.NCTId")
 
-    counter = 1
+    counter = 0
     for row in c.fetchall():
-        print(row[0])
-        true_scores.append(int(row[4]))
-        predicted_scores.append(score_text(row[0], '\n'.join(row[1:4])))
-        labels.append(row[0])
+        study_ids.append(row[0])
+        X.append('\n'.join(row[1:4]))
+        yv = row[4]
+        if yv == 3:
+            yv = 2
+        y.append(yv)
         counter += 1
 
-    true_scores = np.array(true_scores)
-    predicted_scores = np.array(predicted_scores)
+    X = np.array(X)
+    y = np.array(y)
 
-    print("Count    : %s" % len(true_scores))
-    print("Accuracy : %s" % metrics.accuracy_score(true_scores, predicted_scores))
-    f2s = []
-    prauc = []
-    for i in range(3):
-        bt = (true_scores == i)
-        bp = (predicted_scores == i)
-        f2s.append(metrics.fbeta_score(bt, bp, beta=2.0))
-        prauc.append(metrics.average_precision_score(bt, bp))
-    print("F2 score : %s" % f2s)
-    print("PR-AUC   : %s" % prauc)
-    print(metrics.classification_report(true_scores, predicted_scores,
-                                        target_names=['HIV-ineligible', 'indeterminate', 'HIV-eligible']))
+    study_ids = np.array(study_ids)
+    label_map = ('HIV-ineligible', 'indeterminate', 'HIV-eligible')
+
+    seed = 0
+    folds = 10
+    skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
+    y_test_all = []
+    y_pred_all = []
+    stats = []
+    for train, test in skf:
+        X_test, y_test = X[test], y[test]
+        y_test_all.extend(y_test)
+        y_pred = []
+        for sid, text in zip(study_ids[test], X_test):
+            y_pred.append(score_text(sid, text))
+        y_pred = np.array(y_pred)
+        y_pred_all.extend(y_pred)
+
+        sd = list(metrics.precision_recall_fscore_support(y_test, y_pred, beta=2, average=None))[:3]
+        aucs = []
+        ap_score = []
+        for i, label in enumerate(label_map):
+            bt = (y_test == i)
+            bp = (y_pred == i)
+
+            aucs.append(metrics.roc_auc_score(bt, bp))
+            ap_score.append(metrics.average_precision_score(bt, bp))
+
+        sd.append(np.array(aucs))
+        sd.append(np.array(ap_score))
+        stats.append(sd)
+
+    for i, label in enumerate(label_map):
+        stat_mean = {}
+        for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score', 'PR-AUC score')):
+            sd = np.array([x[j][i] for x in stats])
+            print("%s %s: %s" % (label, metric, sd))
+            sd_mean = np.mean(sd)
+            stat_mean[metric] = sd_mean
+            sd_ci = np.array(ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd)))
+            print("%s %s: %.2f %s" % (label, metric, sd_mean, sd_ci))
+        print("%s count: %s" % (label, len([x for x in y_test_all if x == i])))
+
     print("Confusion matrix:")
-    print(metrics.confusion_matrix(true_scores, predicted_scores))
+    print(metrics.confusion_matrix(y_test_all, y_pred_all))
