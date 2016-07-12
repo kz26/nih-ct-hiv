@@ -119,6 +119,10 @@ if __name__ == '__main__':
     y_pred_all = []
     y_pred_proba_all = []
 
+    config_svm = config.get('svm', {})
+    class_weight = config_svm.get('class_weight', None)
+    if class_weight != 'balanced':
+        class_weight = dict(zip(range(len(class_weight)), class_weight))
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
     counter = 0
     for train, test in skf:
@@ -127,8 +131,8 @@ if __name__ == '__main__':
         study_ids_test.extend(list(study_ids[test]))
 
         model = svm.LinearSVC(
-            C=config['svm']['C'],
-            class_weight=dict(zip(range(len(config['svm']['class_weight'])), config['svm']['class_weight'])),
+            C=config_svm.get('C', 1),
+            class_weight=class_weight,
             random_state=seed)
         model.fit(X_train, y_train)
 
