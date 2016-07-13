@@ -13,7 +13,6 @@
       3
     ]
   ],
-  "use_cuis": false,
   "svm": {
     "C": 50,
     "class_weight": [
@@ -21,5 +20,6 @@
       5,
       25
     ]
-  }
+  },
+  "export": "models/cancer_hiv.pickle"
 }

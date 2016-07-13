@@ -1,20 +1,17 @@
 {
   "database": "studies_cs.sqlite",
+  "model": "models/cancer_hiv.pickle",
   "title": "ML",
   "annotation": "hiv",
   "labels": [
-    "hiv excluded",
-    "hiv not excluded"
+    "HIV-ineligible",
+    "indeterminate",
+    "HIV-eligible"
   ],
   "merge": [
     [
-      1,
       2,
       3
     ]
-  ],
-  "svm": {
-    "C": 15,
-    "class_weight": "balanced"
-  }
+  ]
 }

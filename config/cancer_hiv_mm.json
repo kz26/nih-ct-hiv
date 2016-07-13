@@ -13,7 +13,6 @@
       3
     ]
   ],
-  "use_cuis": true,
   "cui_file": "cuis/cuis.pickle",
   "svm": {
     "C": 50,

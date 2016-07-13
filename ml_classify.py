@@ -53,7 +53,7 @@ if __name__ == '__main__':
         config = json.load(f)
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(config)
-    if config.get('use_cuis', False):
+    if config.get('cui_file'):
         CUI = pickle.load(open(config['cui_file'], 'rb'))
     else:
         CUI = None
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     for row in c.fetchall():
         text = filter_study(row[1])
-        if config.get('use_cuis', False):
+        if CUI is not None:
             text += '\n' + '\n'.join(CUI[row[0]])
         # print(text)
         if text:
@@ -88,8 +88,17 @@ if __name__ == '__main__':
 
     study_ids = np.array(study_ids)
 
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2))
-    X = vectorize_all(vectorizer, X, fit=True)
+    model = None
+    if config.get('model'):
+        with open(config['model'], 'rb') as f:
+            payload = pickle.load(f)
+            vectorizer = payload['vectorizer']
+            model = payload['model']
+        X = vectorize_all(vectorizer, X, fit=False)
+    else:
+        vectorizer = TfidfVectorizer(ngram_range=(1, 2))
+        X = vectorize_all(vectorizer, X, fit=True)
+
     y = np.array(y)
     print(X.shape)
 
@@ -119,25 +128,29 @@ if __name__ == '__main__':
     y_pred_all = []
     y_pred_proba_all = []
 
-    config_svm = config.get('svm', {})
-    class_weight = config_svm.get('class_weight', None)
-    if class_weight != 'balanced':
-        class_weight = dict(zip(range(len(class_weight)), class_weight))
     skf = cross_validation.StratifiedKFold(y, n_folds=folds, shuffle=True, random_state=seed)
-    counter = 0
+    model_cache = []
     for train, test in skf:
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         y_test_all.extend(y_test)
         study_ids_test.extend(list(study_ids[test]))
 
-        model = svm.LinearSVC(
-            C=config_svm.get('C', 1),
-            class_weight=class_weight,
-            random_state=seed)
-        model.fit(X_train, y_train)
+        if not config.get('model'):
+            config_svm = config.get('svm', {})
+            class_weight = config_svm.get('class_weight', None)
+            if class_weight != 'balanced':
+                class_weight = dict(zip(range(len(class_weight)), class_weight))
+            model = svm.LinearSVC(
+                C=config_svm.get('C', 1),
+                class_weight=class_weight,
+                random_state=seed)
+            model.fit(X_train, y_train)
 
         y_predicted = model.predict(X_test)
         y_pred_all.extend(y_predicted)
+
+        if config.get('export'):
+            model_cache.append((model, metrics.fbeta_score(y_test, y_predicted, beta=2.0, average='macro')))
 
         y_predicted_score = model.decision_function(X_test)
         prob_min = y_predicted_score.min()
@@ -150,7 +163,7 @@ if __name__ == '__main__':
                 p = (x - prob_min) / (prob_max - prob_min)
                 y_pred_proba_all.append((1 - p, p))
 
-        sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2, average=None))[:3]
+        sd = list(metrics.precision_recall_fscore_support(y_test, y_predicted, beta=2.0, average=None))[:3]
         aucs = []
         ap_score = []
         for i, label in enumerate(label_map):
@@ -176,8 +189,6 @@ if __name__ == '__main__':
         sd.append(np.array(aucs))
         sd.append(np.array(ap_score))
         stats.append(sd)
-
-        counter += 1
 
     y_pred_proba_all = np.array(y_pred_proba_all)
 
@@ -213,6 +224,16 @@ if __name__ == '__main__':
 
     print("Confusion matrix:")
     print(metrics.confusion_matrix(y_test_all, y_pred_all))
+
+    if config.get('export'):
+        model_cache.sort(key=lambda x: x[1], reverse=True)  # sort by descending F-score
+        payload = {
+            'vectorizer': vectorizer,
+            'model': model_cache[0][0]
+        }
+        with open(config['export'], 'wb') as f:
+            pickle.dump(payload, f)
+        print("Exported vectorizer and model to " + config['export'])
 
     plt.figure(1)
     plt.xlim([0.0, 1.0])

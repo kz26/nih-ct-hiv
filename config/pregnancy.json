@@ -15,7 +15,7 @@
   ],
   "use_cuis": false,
   "svm": {
-    "C": 50,
+    "C": 10,
     "class_weight": "balanced"
   }
 }
