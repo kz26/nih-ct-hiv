@@ -63,7 +63,9 @@ if __name__ == '__main__':
             assert(len(y1) == len(y2))
             if len(y1) > 0:
                 ck = metrics.cohen_kappa_score(y1, y2)
-                print("%s %s: %f" % (category, r, ck))
+                print("%s %s y1: %s" % (category, r, y1))
+                print("%s %s y2: %s" % (category, r, y2))
+                print("%s %s kappa (%d): %f" % (category, r, len(y1), ck))
                 kappas.append(ck)
         mean_kappa = np.mean(kappas)
         print("%s mean: %f" % (category, mean_kappa))

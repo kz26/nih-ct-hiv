@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 
 API_URL = "https://clinicaltrials.gov/ct2/show/%s?displayxml=true"
 
+
 class Database(object):
     def __init__(self, path):
         super().__init__()
@@ -94,8 +95,7 @@ class Database(object):
     def print(self, study_id, ec_only=False, print_ascii=False, raw=False):
         c = self.conn.cursor()
         c.execute(
-            'SELECT t1.BriefTitle, t1.Condition, t1.EligibilityCriteria \
-             FROM studies AS t1, hiv_status AS t2 WHERE t1.NCTId=? AND t1.NCTId=t2.NCTId ORDER BY t1.NCTId',
+            'SELECT BriefTitle, Condition, EligibilityCriteria FROM studies WHERE NCTId=?',
             [study_id])
         row = c.fetchone()
         if raw:
@@ -128,6 +128,7 @@ class Database(object):
             text = cp.stdout
         print(text)
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -156,5 +157,3 @@ if __name__ == '__main__':
         db.cherry_pick(ns.study_id)
     elif ns.subcmd == 'print':
         db.print(ns.study_id, ec_only=ns.ec_only, print_ascii=ns.ascii, raw=ns.raw)
-
-
