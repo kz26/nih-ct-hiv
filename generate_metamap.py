@@ -17,7 +17,7 @@ if __name__ == '__main__':
     conn = sqlite3.connect(database)
     c = conn.cursor()
     c.execute(
-        'SELECT NCTId FROM studies')
+        'SELECT NCTId FROM annotations')
     for row in c.fetchall():
         study_id = row[0]
         out_file = os.path.join(output_dir, study_id + '.xml')

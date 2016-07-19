@@ -13,9 +13,10 @@
       3
     ]
   ],
-  "cui_file": "cuis/cuis.pickle",
+  "cui_file": "cuis/cuis.json",
+  "chi2_k": 400,
   "svm": {
-    "C": 50,
+    "C": 100,
     "class_weight": [
       1,
       5,

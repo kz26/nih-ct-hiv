@@ -1,6 +1,6 @@
 {
   "database": "studies_cs.sqlite",
-  "title": "ML (pregnancy)",
+  "title": "ML with NER (pregnancy)",
   "annotation": "pregnancy",
   "labels": [
     "pregnancy excluded",
@@ -13,7 +13,7 @@
       3
     ]
   ],
-  "use_cuis": false,
+  "cui_file": "cuis/cuis_2000.json",
   "svm": {
     "C": 10,
     "class_weight": "balanced"

@@ -65,10 +65,17 @@ if __name__ == '__main__':
                 ck = metrics.cohen_kappa_score(y1, y2)
                 print("%s %s y1: %s" % (category, r, y1))
                 print("%s %s y2: %s" % (category, r, y2))
-                print("%s %s kappa (%d): %f" % (category, r, len(y1), ck))
+                print("%s %s confusion matrix:" % (category, r))
+                print(metrics.confusion_matrix(y1, y2))
+                print("%s %s count: %d" % (category, r, len(y1)))
+                print("%s %s accuracy: %f" % (category, r, metrics.accuracy_score(y1, y2)))
+                print("%s %s kappa: %f" % (category, r, ck))
+                print()
                 kappas.append(ck)
         mean_kappa = np.mean(kappas)
+        print()
         print("%s mean: %f" % (category, mean_kappa))
+        print()
 
 
 

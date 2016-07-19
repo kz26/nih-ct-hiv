@@ -54,7 +54,7 @@ if __name__ == '__main__':
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(config)
     if config.get('cui_file'):
-        CUI = pickle.load(open(config['cui_file'], 'rb'))
+        CUI = json.load(open(config['cui_file']))
     else:
         CUI = None
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     y = np.array(y)
     print(X.shape)
 
-    chi2_best = SelectKBest(chi2, k=250)
+    chi2_best = SelectKBest(chi2, k=config.get('chi2_k', 250))
     X = chi2_best.fit_transform(X, y)
     print(X.shape)
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])

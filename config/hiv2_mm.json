@@ -1,6 +1,6 @@
 {
   "database": "studies_cs.sqlite",
-  "title": "ML (HIV)",
+  "title": "ML with NER (HIV)",
   "annotation": "hiv",
   "labels": [
     "hiv excluded",
@@ -13,6 +13,7 @@
       3
     ]
   ],
+  "cui_file": "cuis/cuis_2000.json",
   "svm": {
     "C": 15,
     "class_weight": "balanced"
