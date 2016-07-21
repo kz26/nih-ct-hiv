@@ -62,8 +62,7 @@ if __name__ == '__main__':
     c = conn.cursor()
     c.execute('SELECT studies.NCTId, studies.EligibilityCriteria, annotations.%s \
         FROM studies, annotations WHERE studies.NCTId=annotations.NCTId \
-        AND studies.StudyType LIKE "%%Interventional%%" AND annotations.%s IS NOT NULL \
-        ORDER BY studies.NCTId' % (config['annotation'], config['annotation']))
+        AND annotations.%s IS NOT NULL ORDER BY studies.NCTId' % (config['annotation'], config['annotation']))
 
     X = []
     y = []
@@ -108,6 +107,7 @@ if __name__ == '__main__':
     print(np.asarray(vectorizer.get_feature_names())[chi2_best.get_support()])
 
     stats = []
+    global_stats = []
     seed = 0
     folds = 10
     print("CV folds: %s" % folds)
@@ -149,8 +149,13 @@ if __name__ == '__main__':
         y_predicted = model.predict(X_test)
         y_pred_all.extend(y_predicted)
 
+        if len(label_map) > 2:
+            avg_mode = 'macro'
+        else:
+            avg_mode = 'binary'
+
         if config.get('export'):
-            model_cache.append((model, metrics.fbeta_score(y_test, y_predicted, beta=2.0, average='macro')))
+            model_cache.append((model, metrics.fbeta_score(y_test, y_predicted, beta=2.0, average=avg_mode)))
 
         y_predicted_score = model.decision_function(X_test)
         prob_min = y_predicted_score.min()
@@ -190,6 +195,11 @@ if __name__ == '__main__':
         sd.append(np.array(ap_score))
         stats.append(sd)
 
+        # compute micro-averaged stats
+        global_sd = list(metrics.precision_recall_fscore_support(
+            y_test, y_predicted, beta=2.0, average=avg_mode))[:3]
+        global_stats.append(global_sd)
+
     y_pred_proba_all = np.array(y_pred_proba_all)
 
     results = []
@@ -221,6 +231,16 @@ if __name__ == '__main__':
         )
         plt.plot(recall, precision,
                  label="%s (PR-AUC = %0.2f)" % (label, stat_mean['PR-AUC score']), lw=2)
+
+    stat_mean = {}
+    for i, metric in enumerate(('precision', 'recall', 'F2 score')):
+        sd = np.array([x[i] for x in global_stats])
+        print("All %s: %s" % (metric, sd))
+        sd_mean = np.mean(sd)
+        stat_mean[metric] = sd_mean
+        sd_ci = np.array(ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd)))
+        print("All %s: %.2f %s" % (metric, sd_mean, sd_ci))
+
 
     print("Confusion matrix:")
     print(metrics.confusion_matrix(y_test_all, y_pred_all))

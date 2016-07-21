@@ -22,5 +22,6 @@
       5,
       25
     ]
-  }
+  },
+  "export": "models/cancer_hiv_mm.pickle"
 }

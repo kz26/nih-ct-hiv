@@ -16,5 +16,6 @@
   "svm": {
     "C": 15,
     "class_weight": "balanced"
-  }
+  },
+  "export": "models/hiv2.pickle"
 }

@@ -161,6 +161,7 @@ if __name__ == '__main__':
     y_test_all = []
     y_pred_all = []
     stats = []
+    global_stats = []
     for train, test in skf:
         X_test, y_test = X[test], y[test]
         y_test_all.extend(y_test)
@@ -184,6 +185,10 @@ if __name__ == '__main__':
         sd.append(np.array(ap_score))
         stats.append(sd)
 
+        global_sd = list(metrics.precision_recall_fscore_support(
+            y_test, y_pred, beta=2.0, average='macro'))[:3]
+        global_stats.append(global_sd)
+
     for i, label in enumerate(label_map):
         stat_mean = {}
         for j, metric in enumerate(('precision', 'recall', 'F2 score', 'ROC-AUC score', 'PR-AUC score')):
@@ -194,6 +199,15 @@ if __name__ == '__main__':
             sd_ci = np.array(ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd)))
             print("%s %s: %.2f %s" % (label, metric, sd_mean, sd_ci))
         print("%s count: %s" % (label, len([x for x in y_test_all if x == i])))
+
+    stat_mean = {}
+    for i, metric in enumerate(('precision', 'recall', 'F2 score')):
+        sd = np.array([x[i] for x in global_stats])
+        print("All %s: %s" % (metric, sd))
+        sd_mean = np.mean(sd)
+        stat_mean[metric] = sd_mean
+        sd_ci = np.array(ST.t.interval(0.95, len(sd) - 1, loc=sd_mean, scale=ST.sem(sd)))
+        print("All %s: %.2f %s" % (metric, sd_mean, sd_ci))
 
     print("Confusion matrix:")
     print(metrics.confusion_matrix(y_test_all, y_pred_all))

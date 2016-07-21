@@ -1,0 +1,21 @@
+{
+  "database": "studies_hiv_merged.sqlite",
+  "title": "ML with NER (HIV)",
+  "annotation": "hiv",
+  "labels": [
+    "hiv excluded",
+    "hiv not excluded"
+  ],
+  "merge": [
+    [
+      1,
+      2,
+      3
+    ]
+  ],
+  "cui_file": "cuis/cuis_merged.json",
+  "svm": {
+    "C": 15,
+    "class_weight": "balanced"
+  }
+}
