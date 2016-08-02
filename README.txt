@@ -39,6 +39,10 @@ Contains the study data and crowdsourced HIV, pregnancy annotations for the "mos
 studies_hiv_merged.sqlite
 Created by merging studies.sqlite and studies_cs.sqlite (HIV annotations only).
 
+annotations/
+Contains the crowdsourced annotation data used to create studies_cs.sqlite. set_master.xlsx is created by concatenating all the individual
+set[X].xlsx spreadsheets and serves as input to iaa.py (need to first replace the string labels with numeric values and then save as CSV.)
+
 Any other content not mentioned here is obsolete and is not likely to be useful.
 
 
